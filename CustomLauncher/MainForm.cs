@@ -33,11 +33,17 @@ namespace CustomLauncher
         private string userInfo = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "dog_udata");
         private readonly HttpClient _httpClient = new();
 
+        private System.Windows.Forms.Timer _serverStatusTimer;
+
         public MainForm()
         {
             InitializeComponent();
             this.FormBorderStyle = FormBorderStyle.None;
             this.MouseDown += new MouseEventHandler(MainForm_MouseDown);
+
+            _serverStatusTimer = new System.Windows.Forms.Timer();
+            _serverStatusTimer.Interval = 10000; // 10초마다 서버 상태 확인
+            _serverStatusTimer.Tick += ServerStatusTimer_Tick;
         }
         private void MainForm_MouseDown(object sender, MouseEventArgs e)
         {
@@ -80,7 +86,57 @@ namespace CustomLauncher
 
             btnStartGame.Enabled = false;
 
+            await CheckServerStatusAsyncs();
             await initializeLauncher(new MinecraftPath());
+            _serverStatusTimer.Start();
+        }
+
+        private async void ServerStatusTimer_Tick(object sender, EventArgs e)
+        {
+            await CheckServerStatusAsyncs();
+        }
+
+        private async Task CheckServerStatusAsyncs()
+        {
+            bool isOnline = await CheckServerStatusAsync();
+            UpdateServerStatusLabel(isOnline);
+        }
+
+        private const string ServerStatusUrl = "https://mcv.kr/mchecker/api.php?address=dogs.mcv.kr&port=25565&autodns=1";
+
+        private async Task<bool> CheckServerStatusAsync()
+        {
+            try
+            {
+                string content = await _httpClient.GetStringAsync(ServerStatusUrl);
+
+                // "online" 필드의 값이 true인지 확인
+                bool isOnline;
+
+                if (content == "1") isOnline = true;
+                else if (content == "2") isOnline = false;
+                else isOnline = false;
+
+                return isOnline;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred: {ex.Message}");
+                return false;
+            }
+        }
+
+        private void UpdateServerStatusLabel(bool isOnline)
+        {
+            if (labelServerStatus.InvokeRequired)
+            {
+                labelServerStatus.Invoke(new Action<bool>(UpdateServerStatusLabel), isOnline);
+            }
+            else
+            {
+                labelServerStatus.Text = isOnline ? "서버 상태:  온라인" : "서버 상태: 오프라인";
+                labelServerStatus.ForeColor = isOnline ? Color.Green : Color.Red;
+            }
         }
 
         private async Task initializeLauncher(MinecraftPath path)
@@ -485,7 +541,8 @@ namespace CustomLauncher
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"로그인 또는 실행 실패: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                await LoginHandler.Signout();
+                MessageBox.Show($"로그인 또는 실행 실패: 다시 시도하세요.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -771,7 +828,7 @@ namespace CustomLauncher
 
         private void pictureBox1_Click(object sender, EventArgs e)
         {
-            string url = "https://dogdev.buzz";
+            string url = "https://dogpub.p-e.kr";
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
 

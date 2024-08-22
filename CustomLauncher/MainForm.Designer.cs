@@ -27,6 +27,7 @@ namespace CustomLauncher
             this.EXIT = new System.Windows.Forms.Button();
             this.settingsBtn = new System.Windows.Forms.Button();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
+            this.labelServerStatus = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -161,11 +162,24 @@ namespace CustomLauncher
             this.pictureBox1.TabStop = false;
             this.pictureBox1.Click += new System.EventHandler(this.pictureBox1_Click);
             // 
+            // labelServerStatus
+            // 
+            this.labelServerStatus.AutoSize = true;
+            this.labelServerStatus.BackColor = System.Drawing.Color.Transparent;
+            this.labelServerStatus.Font = new System.Drawing.Font("던파 비트비트체 v2", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.labelServerStatus.Location = new System.Drawing.Point(130, 456);
+            this.labelServerStatus.Name = "labelServerStatus";
+            this.labelServerStatus.Size = new System.Drawing.Size(50, 23);
+            this.labelServerStatus.TabIndex = 6;
+            this.labelServerStatus.Text = "test";
+            this.labelServerStatus.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
             // MainForm
             // 
             this.BackgroundImage = global::CustomLauncher.Properties.Resources.BG;
             this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.ClientSize = new System.Drawing.Size(404, 711);
+            this.Controls.Add(this.labelServerStatus);
             this.Controls.Add(this.btnLogin);
             this.Controls.Add(this.btnStartGame);
             this.Controls.Add(this.btnLogout);
@@ -203,5 +217,6 @@ namespace CustomLauncher
         private Button EXIT;
         private Button btnLogout;
         private Button btnStartGame;
+        internal Label labelServerStatus;
     }
 }

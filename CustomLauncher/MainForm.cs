@@ -415,7 +415,9 @@ namespace CustomLauncher
                 {
                     progressBar1.Value = 0;
                     progressBar1.Visible = true;
-                    UpdateStatusLabel($"업데이트 중...");
+                    UpdateStatusLabel("업데이트 중...");
+
+                    DeleteOldFiles();
 
                     await DownloadFilesAsync();
 
@@ -446,7 +448,7 @@ namespace CustomLauncher
                     finally
                     {
                         progressBar1.Value = 0;
-                        UpdateStatusLabel(" 업데이트 완료");
+                        UpdateStatusLabel("업데이트 완료");
                     }
                 }
                 else
@@ -457,6 +459,40 @@ namespace CustomLauncher
             catch (Exception ex)
             {
                 UpdateStatusLabel("업데이트 체크 중 오류 발생");
+            }
+        }
+
+        private void DeleteOldFiles()
+        {
+            string[] directoriesToDelete = { "mods" };
+
+            foreach (var dir in directoriesToDelete)
+            {
+                string fullPath = Path.Combine(directory, dir);
+
+                if (System.IO.Directory.Exists(fullPath))
+                {
+                    try
+                    {
+                        // 폴더 내의 모든 파일 및 서브디렉토리 삭제
+                        foreach (var file in System.IO.Directory.GetFiles(fullPath))
+                        {
+                            File.Delete(file);
+                        }
+
+                        foreach (var subDir in System.IO.Directory.GetDirectories(fullPath))
+                        {
+                            System.IO.Directory.Delete(subDir, true); // true to delete subdirectories
+                        }
+
+                        // 빈 폴더 삭제
+                        System.IO.Directory.Delete(fullPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"폴더 삭제 실패: {ex.Message}\n{fullPath}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
             }
         }
 
@@ -682,38 +718,6 @@ namespace CustomLauncher
             }
         }
 
-
-        ByteProgress byteProgress;
-        private void Launcher_ProgressChanged(ByteProgress e)
-        {
-            ByteProgress = e;
-        }
-
-        InstallerProgressChangedEventArgs? fileProgress;
-
-        public static int WM_NCLBUTTONDOWN => wM_NCLBUTTONDOWN;
-
-        public static int HTCAPTION => hTCAPTION;
-
-        public string Directory { get => directory; set => directory = value; }
-        public string SettingFile { get => settingFile; set => settingFile = value; }
-        public string UserInfo { get => userInfo; set => userInfo = value; }
-
-        public HttpClient HttpClient => _httpClient;
-
-        public string AppDataPath { get => appDataPath; set => appDataPath = value; }
-        public CancellationTokenSource CancellationToken { get => cancellationToken; set => cancellationToken = value; }
-        public MinecraftLauncher Launcher { get => launcher; set => launcher = value; }
-        public JELoginHandler LoginHandler { get => loginHandler; set => loginHandler = value; }
-        public ByteProgress ByteProgress { get => byteProgress; set => byteProgress = value; }
-        public InstallerProgressChangedEventArgs FileProgress { get => fileProgress; set => fileProgress = value; }
-
-        private void Launcher_FileChanged(InstallerProgressChangedEventArgs e)
-        {
-            if (e.EventType == InstallerEventType.Done)
-                FileProgress = e;
-        }
-
         private Settings LoadSettings()
         {
             var settings = new Settings();
@@ -802,6 +806,24 @@ namespace CustomLauncher
                 MessageBox.Show($"설정 저장 실패: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        InstallerProgressChangedEventArgs? fileProgress;
+
+        public static int WM_NCLBUTTONDOWN => wM_NCLBUTTONDOWN;
+
+        public static int HTCAPTION => hTCAPTION;
+
+        public string Directory { get => directory; set => directory = value; }
+        public string SettingFile { get => settingFile; set => settingFile = value; }
+        public string UserInfo { get => userInfo; set => userInfo = value; }
+
+        public HttpClient HttpClient => _httpClient;
+
+        public string AppDataPath { get => appDataPath; set => appDataPath = value; }
+        public CancellationTokenSource CancellationToken { get => cancellationToken; set => cancellationToken = value; }
+        public MinecraftLauncher Launcher { get => launcher; set => launcher = value; }
+        public JELoginHandler LoginHandler { get => loginHandler; set => loginHandler = value; }
+        public InstallerProgressChangedEventArgs FileProgress { get => fileProgress; set => fileProgress = value; }
 
 
         private void btnSettings1_Click(object sender, EventArgs e)

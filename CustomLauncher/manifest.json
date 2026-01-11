@@ -1,0 +1,12 @@
+{
+  "version": "1.0.0",
+  "files": [
+    {
+      "path": "파일.7z",
+      "url": "다운로드 주소",
+      "hash": "해쉬값(certutil -hashfile 파일.7z SHA256)",
+	  "extract": true,
+	  "version_file_path": "version.txt"
+    }
+  ]
+}

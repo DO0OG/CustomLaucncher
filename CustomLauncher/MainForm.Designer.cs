@@ -26,9 +26,8 @@ namespace CustomLauncher
             this.btnStartGame = new System.Windows.Forms.Button();
             this.EXIT = new System.Windows.Forms.Button();
             this.settingsBtn = new System.Windows.Forms.Button();
-            this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.labelServerStatus = new System.Windows.Forms.Label();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
+            this.logo = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // progressBar1
@@ -42,24 +41,24 @@ namespace CustomLauncher
             // 
             this.labelStatus.AutoSize = true;
             this.labelStatus.BackColor = System.Drawing.Color.Transparent;
-            this.labelStatus.Font = new System.Drawing.Font("던파 비트비트체 v2", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.labelStatus.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.labelStatus.Location = new System.Drawing.Point(157, 573);
             this.labelStatus.Name = "labelStatus";
-            this.labelStatus.Size = new System.Drawing.Size(0, 17);
+            this.labelStatus.Size = new System.Drawing.Size(0, 15);
             this.labelStatus.TabIndex = 5;
             this.labelStatus.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // btnLogin
             // 
             this.btnLogin.BackColor = System.Drawing.Color.Transparent;
-            this.btnLogin.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("btnLogin.BackgroundImage")));
+            this.btnLogin.BackgroundImage = global::CustomLauncher.Properties.Resources.login;
             this.btnLogin.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.btnLogin.FlatAppearance.BorderSize = 0;
             this.btnLogin.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Transparent;
             this.btnLogin.FlatAppearance.MouseOverBackColor = System.Drawing.Color.Transparent;
             this.btnLogin.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnLogin.Font = new System.Drawing.Font("던파 비트비트체 v2", 24F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.btnLogin.ForeColor = System.Drawing.SystemColors.ActiveCaption;
+            this.btnLogin.Font = new System.Drawing.Font("맑은 고딕", 24F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.btnLogin.ForeColor = System.Drawing.SystemColors.ControlText;
             this.btnLogin.Location = new System.Drawing.Point(11, 601);
             this.btnLogin.Name = "btnLogin";
             this.btnLogin.Size = new System.Drawing.Size(381, 90);
@@ -73,14 +72,14 @@ namespace CustomLauncher
             // btnLogout
             // 
             this.btnLogout.BackColor = System.Drawing.Color.Transparent;
-            this.btnLogout.BackgroundImage = global::CustomLauncher.Properties.Resources.Logout;
+            this.btnLogout.BackgroundImage = global::CustomLauncher.Properties.Resources.logout;
             this.btnLogout.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.btnLogout.FlatAppearance.BorderSize = 0;
             this.btnLogout.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Transparent;
             this.btnLogout.FlatAppearance.MouseOverBackColor = System.Drawing.Color.Transparent;
             this.btnLogout.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnLogout.Font = new System.Drawing.Font("던파 비트비트체 v2", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.btnLogout.ForeColor = System.Drawing.SystemColors.ActiveCaption;
+            this.btnLogout.Font = new System.Drawing.Font("맑은 고딕", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.btnLogout.ForeColor = System.Drawing.SystemColors.ControlText;
             this.btnLogout.Location = new System.Drawing.Point(302, 601);
             this.btnLogout.Name = "btnLogout";
             this.btnLogout.Size = new System.Drawing.Size(90, 90);
@@ -94,14 +93,14 @@ namespace CustomLauncher
             // btnStartGame
             // 
             this.btnStartGame.BackColor = System.Drawing.Color.Transparent;
-            this.btnStartGame.BackgroundImage = global::CustomLauncher.Properties.Resources.GameStart;
+            this.btnStartGame.BackgroundImage = global::CustomLauncher.Properties.Resources.gamestart;
             this.btnStartGame.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.btnStartGame.FlatAppearance.BorderSize = 0;
             this.btnStartGame.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Transparent;
             this.btnStartGame.FlatAppearance.MouseOverBackColor = System.Drawing.Color.Transparent;
             this.btnStartGame.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnStartGame.Font = new System.Drawing.Font("던파 비트비트체 v2", 24F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.btnStartGame.ForeColor = System.Drawing.SystemColors.ActiveCaption;
+            this.btnStartGame.Font = new System.Drawing.Font("맑은 고딕", 24F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.btnStartGame.ForeColor = System.Drawing.SystemColors.ControlText;
             this.btnStartGame.Location = new System.Drawing.Point(11, 601);
             this.btnStartGame.Margin = new System.Windows.Forms.Padding(15);
             this.btnStartGame.Name = "btnStartGame";
@@ -122,8 +121,8 @@ namespace CustomLauncher
             this.EXIT.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Transparent;
             this.EXIT.FlatAppearance.MouseOverBackColor = System.Drawing.Color.Transparent;
             this.EXIT.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.EXIT.Font = new System.Drawing.Font("던파 비트비트체 v2", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.EXIT.Location = new System.Drawing.Point(326, 14);
+            this.EXIT.Font = new System.Drawing.Font("맑은 고딕", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.EXIT.Location = new System.Drawing.Point(327, 12);
             this.EXIT.Name = "EXIT";
             this.EXIT.Size = new System.Drawing.Size(65, 65);
             this.EXIT.TabIndex = 4;
@@ -133,70 +132,71 @@ namespace CustomLauncher
             // settingsBtn
             // 
             this.settingsBtn.BackColor = System.Drawing.Color.Transparent;
-            this.settingsBtn.BackgroundImage = global::CustomLauncher.Properties.Resources.setting;
+            this.settingsBtn.BackgroundImage = global::CustomLauncher.Properties.Resources.config;
             this.settingsBtn.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.settingsBtn.FlatAppearance.BorderSize = 0;
             this.settingsBtn.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Transparent;
             this.settingsBtn.FlatAppearance.MouseOverBackColor = System.Drawing.Color.Transparent;
             this.settingsBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.settingsBtn.Font = new System.Drawing.Font("던파 비트비트체 v2", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.settingsBtn.Location = new System.Drawing.Point(11, 16);
+            this.settingsBtn.Font = new System.Drawing.Font("맑은 고딕", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.settingsBtn.Location = new System.Drawing.Point(11, 12);
             this.settingsBtn.Name = "settingsBtn";
-            this.settingsBtn.Size = new System.Drawing.Size(63, 63);
+            this.settingsBtn.Size = new System.Drawing.Size(65, 65);
             this.settingsBtn.TabIndex = 3;
             this.settingsBtn.UseVisualStyleBackColor = false;
             this.settingsBtn.Click += new System.EventHandler(this.btnSettings1_Click);
             this.settingsBtn.MouseDown += new System.Windows.Forms.MouseEventHandler(this.settingsBtn_MouseDown);
             this.settingsBtn.MouseUp += new System.Windows.Forms.MouseEventHandler(this.settingsBtn_MouseUp);
             // 
-            // pictureBox1
-            // 
-            this.pictureBox1.BackColor = System.Drawing.Color.Transparent;
-            this.pictureBox1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.pictureBox1.Image = global::CustomLauncher.Properties.Resources.logo;
-            this.pictureBox1.Location = new System.Drawing.Point(12, 249);
-            this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(380, 190);
-            this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
-            this.pictureBox1.TabIndex = 2;
-            this.pictureBox1.TabStop = false;
-            this.pictureBox1.Click += new System.EventHandler(this.pictureBox1_Click);
-            // 
             // labelServerStatus
             // 
             this.labelServerStatus.AutoSize = true;
             this.labelServerStatus.BackColor = System.Drawing.Color.Transparent;
-            this.labelServerStatus.Font = new System.Drawing.Font("던파 비트비트체 v2", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.labelServerStatus.Font = new System.Drawing.Font("맑은 고딕", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.labelServerStatus.Location = new System.Drawing.Point(130, 456);
             this.labelServerStatus.Name = "labelServerStatus";
-            this.labelServerStatus.Size = new System.Drawing.Size(50, 23);
+            this.labelServerStatus.Size = new System.Drawing.Size(0, 21);
             this.labelServerStatus.TabIndex = 6;
-            this.labelServerStatus.Text = "test";
             this.labelServerStatus.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // logo
+            // 
+            this.logo.BackColor = System.Drawing.Color.Transparent;
+            this.logo.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
+            this.logo.FlatAppearance.BorderSize = 0;
+            this.logo.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Transparent;
+            this.logo.FlatAppearance.MouseOverBackColor = System.Drawing.Color.Transparent;
+            this.logo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.logo.Font = new System.Drawing.Font("맑은 고딕", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.logo.Image = global::CustomLauncher.Properties.Resources.logo;
+            this.logo.Location = new System.Drawing.Point(11, 160);
+            this.logo.Name = "logo";
+            this.logo.Size = new System.Drawing.Size(380, 190);
+            this.logo.TabIndex = 7;
+            this.logo.UseVisualStyleBackColor = false;
             // 
             // MainForm
             // 
-            this.BackgroundImage = global::CustomLauncher.Properties.Resources.BG;
+            this.BackgroundImage = global::CustomLauncher.Properties.Resources.background;
             this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.ClientSize = new System.Drawing.Size(404, 711);
-            this.Controls.Add(this.labelServerStatus);
+            this.Controls.Add(this.logo);
             this.Controls.Add(this.btnLogin);
+            this.Controls.Add(this.labelServerStatus);
             this.Controls.Add(this.btnStartGame);
             this.Controls.Add(this.btnLogout);
             this.Controls.Add(this.EXIT);
             this.Controls.Add(this.settingsBtn);
             this.Controls.Add(this.labelStatus);
             this.Controls.Add(this.progressBar1);
-            this.Controls.Add(this.pictureBox1);
             this.DoubleBuffered = true;
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "DOG LAUNCHER";
+            this.Text = "DOGLAUNCHER";
             this.Shown += new System.EventHandler(this.MainForm_Shown);
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -209,7 +209,6 @@ namespace CustomLauncher
                 btnLogin.PerformClick();
             }
         }
-        private PictureBox pictureBox1;
         private ProgressBar progressBar1;
         internal Label labelStatus;
         private Button btnLogin;
@@ -218,5 +217,6 @@ namespace CustomLauncher
         private Button btnLogout;
         private Button btnStartGame;
         internal Label labelServerStatus;
+        private Button logo;
     }
 }

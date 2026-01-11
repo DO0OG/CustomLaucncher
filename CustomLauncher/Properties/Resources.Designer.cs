@@ -83,6 +83,16 @@ namespace CustomLauncher.Properties {
         /// <summary>
         ///   System.Drawing.Bitmap 형식의 지역화된 리소스를 찾습니다.
         /// </summary>
+        internal static System.Drawing.Bitmap background {
+            get {
+                object obj = ResourceManager.GetObject("background", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   System.Drawing.Bitmap 형식의 지역화된 리소스를 찾습니다.
+        /// </summary>
         internal static System.Drawing.Bitmap bark {
             get {
                 object obj = ResourceManager.GetObject("bark", resourceCulture);
@@ -93,9 +103,19 @@ namespace CustomLauncher.Properties {
         /// <summary>
         ///   System.Drawing.Bitmap 형식의 지역화된 리소스를 찾습니다.
         /// </summary>
-        internal static System.Drawing.Bitmap BG {
+        internal static System.Drawing.Bitmap config {
             get {
-                object obj = ResourceManager.GetObject("BG", resourceCulture);
+                object obj = ResourceManager.GetObject("config", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   System.Drawing.Bitmap 형식의 지역화된 리소스를 찾습니다.
+        /// </summary>
+        internal static System.Drawing.Bitmap config_clicked {
+            get {
+                object obj = ResourceManager.GetObject("config_clicked", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -123,9 +143,9 @@ namespace CustomLauncher.Properties {
         /// <summary>
         ///   System.Drawing.Bitmap 형식의 지역화된 리소스를 찾습니다.
         /// </summary>
-        internal static System.Drawing.Bitmap GameStart {
+        internal static System.Drawing.Bitmap gamestart {
             get {
-                object obj = ResourceManager.GetObject("GameStart", resourceCulture);
+                object obj = ResourceManager.GetObject("gamestart", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -133,9 +153,9 @@ namespace CustomLauncher.Properties {
         /// <summary>
         ///   System.Drawing.Bitmap 형식의 지역화된 리소스를 찾습니다.
         /// </summary>
-        internal static System.Drawing.Bitmap GameStart_Clicked {
+        internal static System.Drawing.Bitmap gamestart_clicked {
             get {
-                object obj = ResourceManager.GetObject("GameStart_Clicked", resourceCulture);
+                object obj = ResourceManager.GetObject("gamestart_clicked", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -143,9 +163,9 @@ namespace CustomLauncher.Properties {
         /// <summary>
         ///   System.Drawing.Bitmap 형식의 지역화된 리소스를 찾습니다.
         /// </summary>
-        internal static System.Drawing.Bitmap Login {
+        internal static System.Drawing.Bitmap login {
             get {
-                object obj = ResourceManager.GetObject("Login", resourceCulture);
+                object obj = ResourceManager.GetObject("login", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -153,9 +173,9 @@ namespace CustomLauncher.Properties {
         /// <summary>
         ///   System.Drawing.Bitmap 형식의 지역화된 리소스를 찾습니다.
         /// </summary>
-        internal static System.Drawing.Bitmap Login_Clicked {
+        internal static System.Drawing.Bitmap login_clicked {
             get {
-                object obj = ResourceManager.GetObject("Login_Clicked", resourceCulture);
+                object obj = ResourceManager.GetObject("login_clicked", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -173,9 +193,9 @@ namespace CustomLauncher.Properties {
         /// <summary>
         ///   System.Drawing.Bitmap 형식의 지역화된 리소스를 찾습니다.
         /// </summary>
-        internal static System.Drawing.Bitmap Logout {
+        internal static System.Drawing.Bitmap logout {
             get {
-                object obj = ResourceManager.GetObject("Logout", resourceCulture);
+                object obj = ResourceManager.GetObject("logout", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -183,9 +203,9 @@ namespace CustomLauncher.Properties {
         /// <summary>
         ///   System.Drawing.Bitmap 형식의 지역화된 리소스를 찾습니다.
         /// </summary>
-        internal static System.Drawing.Bitmap Logout_Clicked {
+        internal static System.Drawing.Bitmap logout_clicked {
             get {
-                object obj = ResourceManager.GetObject("Logout_Clicked", resourceCulture);
+                object obj = ResourceManager.GetObject("logout_clicked", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -197,26 +217,6 @@ namespace CustomLauncher.Properties {
             get {
                 object obj = ResourceManager.GetObject("md", resourceCulture);
                 return ((System.Drawing.Icon)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   System.Drawing.Bitmap 형식의 지역화된 리소스를 찾습니다.
-        /// </summary>
-        internal static System.Drawing.Bitmap setting {
-            get {
-                object obj = ResourceManager.GetObject("setting", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   System.Drawing.Bitmap 형식의 지역화된 리소스를 찾습니다.
-        /// </summary>
-        internal static System.Drawing.Bitmap setting_clicked {
-            get {
-                object obj = ResourceManager.GetObject("setting_clicked", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
             }
         }
     }

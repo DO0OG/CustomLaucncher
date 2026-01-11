@@ -2,9 +2,9 @@
   "version": "1.0.0",
   "files": [
     {
-      "path": "rooftop.7z",
-      "url": "https://dogs.kro.kr/f/8cbfa35c1278497286fe/?dl=1",
-      "hash": "22112151c40e4986fb13ab50dec0114220c632105b14035f9c68bbe414419f47",
+      "path": "파일.7z",
+      "url": "다운로드 주소",
+      "hash": "해쉬값(certutil -hashfile 파일.7z SHA256)",
 	  "extract": true,
 	  "version_file_path": "version.txt"
     }

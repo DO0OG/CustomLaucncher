@@ -44,31 +44,31 @@ namespace CustomLauncher
             this.txtInstallPath.Name = "txtInstallPath";
             this.txtInstallPath.Size = new System.Drawing.Size(188, 21);
             this.txtInstallPath.TabIndex = 4;
-            this.txtInstallPath.Text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".dogserver");
+            this.txtInstallPath.Text = "C:\\Users\\안지훈\\AppData\\Roaming\\.custom\r\n\r\n";
             // 
             // lblResolution
             // 
             this.lblResolution.AutoSize = true;
-            this.lblResolution.Font = new System.Drawing.Font("던파 비트비트체 v2", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.lblResolution.Font = new System.Drawing.Font("맑은 고딕", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.lblResolution.Location = new System.Drawing.Point(24, 72);
             this.lblResolution.Name = "lblResolution";
-            this.lblResolution.Size = new System.Drawing.Size(58, 23);
+            this.lblResolution.Size = new System.Drawing.Size(58, 21);
             this.lblResolution.TabIndex = 8;
             this.lblResolution.Text = "해상도";
             // 
             // lblInstallPath
             // 
             this.lblInstallPath.AutoSize = true;
-            this.lblInstallPath.Font = new System.Drawing.Font("던파 비트비트체 v2", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.lblInstallPath.Font = new System.Drawing.Font("맑은 고딕", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.lblInstallPath.Location = new System.Drawing.Point(14, 26);
             this.lblInstallPath.Name = "lblInstallPath";
-            this.lblInstallPath.Size = new System.Drawing.Size(78, 23);
+            this.lblInstallPath.Size = new System.Drawing.Size(80, 21);
             this.lblInstallPath.TabIndex = 9;
             this.lblInstallPath.Text = "설치 경로";
             // 
             // btnSave
             // 
-            this.btnSave.Font = new System.Drawing.Font("던파 비트비트체 v2", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.btnSave.Font = new System.Drawing.Font("맑은 고딕", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.btnSave.Location = new System.Drawing.Point(154, 189);
             this.btnSave.Name = "btnSave";
             this.btnSave.Size = new System.Drawing.Size(111, 41);
@@ -79,7 +79,7 @@ namespace CustomLauncher
             // 
             // btnBrowsePath
             // 
-            this.btnBrowsePath.Font = new System.Drawing.Font("던파 비트비트체 v2", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.btnBrowsePath.Font = new System.Drawing.Font("맑은 고딕", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.btnBrowsePath.Location = new System.Drawing.Point(302, 23);
             this.btnBrowsePath.Name = "btnBrowsePath";
             this.btnBrowsePath.Size = new System.Drawing.Size(103, 30);
@@ -91,10 +91,10 @@ namespace CustomLauncher
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Font = new System.Drawing.Font("던파 비트비트체 v2", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.label1.Font = new System.Drawing.Font("맑은 고딕", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.label1.Location = new System.Drawing.Point(82, 117);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(109, 23);
+            this.label1.Size = new System.Drawing.Size(104, 21);
             this.label1.TabIndex = 12;
             this.label1.Text = "최대 램 (MB)";
             // 
@@ -112,10 +112,10 @@ namespace CustomLauncher
             // 
             this.version.AutoSize = true;
             this.version.BackColor = System.Drawing.Color.Transparent;
-            this.version.Font = new System.Drawing.Font("던파 비트비트체 v2", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.version.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.version.Location = new System.Drawing.Point(154, 158);
             this.version.Name = "version";
-            this.version.Size = new System.Drawing.Size(0, 17);
+            this.version.Size = new System.Drawing.Size(0, 15);
             this.version.TabIndex = 14;
             this.version.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 

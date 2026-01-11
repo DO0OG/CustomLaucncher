@@ -1,40 +1,36 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Drawing;
 using System.Drawing.Text;
+using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace CustomLauncher
 {
-    public class FontLibrary
+    public static class FontLibrary
     {
-        private static FontLibrary inst = new FontLibrary();
-        public PrivateFontCollection privateFont = new PrivateFontCollection();
-        public static FontFamily[] Families
+        private static PrivateFontCollection privateFonts = new PrivateFontCollection();
+        private static Font dnfbitbitv2;
+
+        public static void Initialize()
         {
-            get
+            byte[] fontData = Properties.Resources.DNFBitBitv2;
+            IntPtr fontPtr = Marshal.AllocCoTaskMem(fontData.Length);
+            Marshal.Copy(fontData, 0, fontPtr, fontData.Length);
+            privateFonts.AddMemoryFont(fontPtr, fontData.Length);
+            Marshal.FreeCoTaskMem(fontPtr);
+
+            FontFamily fontFamily = privateFonts.Families[0];
+            dnfbitbitv2 = new Font(fontFamily, 12f, FontStyle.Regular, GraphicsUnit.Pixel);
+        }
+
+        public static Font GetFont()
+        {
+            if (dnfbitbitv2 == null)
             {
-                return inst.privateFont.Families;
+                Initialize();
             }
+            return dnfbitbitv2;
         }
-
-        public FontLibrary()
-        {
-            AddFontFromMemory();
-        }
-
-        private void AddFontFromMemory()
-        {
-            List<byte[]> fonts = new List<byte[]>();
-            fonts.Add(Properties.Resources.DNFBitBitv2);
-
-            foreach (byte[] font in fonts)
-            {
-                IntPtr fontBuffer = Marshal.AllocCoTaskMem(font.Length);
-                Marshal.Copy(font, 0, fontBuffer, font.Length);
-                privateFont.AddMemoryFont(fontBuffer, font.Length);
-            }
-        }
-
     }
 }

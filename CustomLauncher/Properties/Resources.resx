@@ -118,34 +118,34 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="Logout" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="logout" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Logout.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="exit" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\exit.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="setting" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="config" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\setting.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="Login_Clicked" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="login_clicked" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Login_Clicked.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="_7_Zip_x64" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\resources\7-zip_x64.zip;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="Logout_Clicked" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="logout_clicked" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Logout_Clicked.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="BG" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="background" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\BG.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="DNFBitBitv2" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\resources\dnfbitbitv2.ttf;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="GameStart" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="gamestart" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\GameStart.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="setting_clicked" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="config_clicked" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\setting_clicked.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="md" type="System.Resources.ResXFileRef, System.Windows.Forms">
@@ -154,13 +154,13 @@
   <data name="bark" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\bark.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="GameStart_Clicked" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="gamestart_clicked" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\GameStart_Clicked.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="_7_Zip_x86" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\resources\7-zip_x86.zip;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="Login" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="login" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Login.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="logo" type="System.Resources.ResXFileRef, System.Windows.Forms">

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
 
@@ -6,8 +7,8 @@ namespace CustomLauncher
 {
     public partial class SettingsForm : Form
     {
-        private string settingsFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "dog_settings.txt");
-        private string versionFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "dog_version.txt");
+        private string settingsFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "customServer_settings.txt");
+        private string versionFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "customServer_version.txt");
 
         public string SettingsFilePath { get => settingsFilePath; set => settingsFilePath = value; }
         public string VersionFilePath { get => versionFilePath; set => versionFilePath = value; }
@@ -16,8 +17,41 @@ namespace CustomLauncher
         {
             InitializeComponent();
             PopulateResolutionComboBox();
+
+            string defaultPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                ".custom"
+            );
+            txtInstallPath.Text = defaultPath;
+
             LoadSettings();
-            LoadVersionInfo();
+
+            // 폰트 적용은 Load 이벤트에서 수행
+            this.Load += SettingsForm_Load;
+        }
+
+        private void SettingsForm_Load(object sender, EventArgs e)
+        {
+            try
+            {
+                ApplyFontToControls(this);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error applying font: {ex.Message}");
+            }
+        }
+
+        private void ApplyFontToControls(Control parentControl)
+        {
+            foreach (Control control in parentControl.Controls)
+            {
+                control.Font = new Font(FontLibrary.GetFont().FontFamily, control.Font.Size, control.Font.Style);
+                if (control.HasChildren)
+                {
+                    ApplyFontToControls(control);
+                }
+            }
         }
 
         private void LoadSettings()
@@ -31,24 +65,6 @@ namespace CustomLauncher
                     txtInstallPath.Text = settings[1];
                     ramValue.Text = settings[2];
                 }
-            }
-        }
-
-        private void LoadVersionInfo()
-        {
-            if (File.Exists(VersionFilePath))
-            {
-                var versionInfo = File.ReadAllText(VersionFilePath);
-                version.Text = $"현재 버전: {versionInfo}"; // 라벨에 현재 버전 표시
-            }
-            else
-            {
-                var settings = new string[]
-                {
-                    "1.0.0.0"
-                };
-
-                File.WriteAllLines(VersionFilePath, settings);
             }
         }
 
@@ -116,5 +132,7 @@ namespace CustomLauncher
                 }
             }
         }
+
+
     }
 }

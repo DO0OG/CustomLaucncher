@@ -4,7 +4,7 @@ using System.Text;
 
 public static class EncryptionHelper
 {
-    private static readonly byte[] Key = Encoding.UTF8.GetBytes("laleme9509481@A123456789"); // 32바이트 키
+    private static readonly byte[] Key = Encoding.UTF8.GetBytes("비밀번호"); // 32바이트 키
     private static readonly byte[] IV = new byte[16]; // 16바이트 IV
 
     public static byte[] Encrypt(string plainText)

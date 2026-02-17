@@ -41,7 +41,7 @@ namespace CustomLauncher
 
     public static class AutoUpdater
     {
-        private const string ManifestUrl = "manifest.json 주소";
+        private const string ManifestUrl = "https://dogs.kro.kr/f/d7799eeff50149a4804f/?dl=1";
 
         public static async Task<bool> CheckForUpdatesAsync(string baseDirectory)
         {
@@ -114,6 +114,23 @@ namespace CustomLauncher
 
                             if (fileInfo.Extract)
                             {
+                                // mods 폴더 삭제 로직 추가
+                                string modsPath = Path.Combine(baseDirectory, "mods");
+                                DebugLogger.Log($"-> Checking for existing 'mods' folder at '{modsPath}' to remove it before extraction.");
+                                if (Directory.Exists(modsPath))
+                                {
+                                    try
+                                    {
+                                        Directory.Delete(modsPath, true);
+                                        DebugLogger.Log("-> Successfully deleted 'mods' folder.");
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        DebugLogger.Log($"-> ERROR: Failed to delete 'mods' folder. {ex.Message}");
+                                        // 오류를 던지거나 사용자에게 알릴 수 있지만, 여기서는 로그만 남기고 계속 진행합니다.
+                                    }
+                                }
+
                                 DebugLogger.Log($"-> Extracting '{localFilePath}' to '{baseDirectory}'");
                                 await Extract7zAsync(localFilePath, baseDirectory);
                                 DebugLogger.Log($"-> Deleting archive '{localFilePath}' after extraction.");

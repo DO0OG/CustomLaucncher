@@ -1,6 +1,8 @@
 # CustomLauncher
 
-맞춤형 Minecraft 런처는 특정 서버에 쉽게 접속하고 항상 최신 상태를 유지할 수 있도록 설계된 Windows Forms 애플리케이션입니다. Microsoft 계정으로 로그인하고, 자동으로 게임 파일과 모드를 업데이트하며, 사전 구성된 서버로 바로 게임을 시작할 수 있습니다.
+특정 서버에 쉽게 접속하고 항상 최신 상태를 유지할 수 있도록 설계된 Windows Forms 애플리케이션입니다. Microsoft 계정으로 로그인하고, 자동으로 게임 파일과 모드를 업데이트하며, 사전 구성된 서버로 바로 게임을 시작할 수 있습니다.
+
+![image](https://github.com/user-attachments/assets/6bb45976-5dfa-4c73-afc7-f6ee97e5a058)
 
 ## 주요 기능
 

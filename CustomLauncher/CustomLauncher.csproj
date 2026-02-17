@@ -239,11 +239,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AutoUpdater.cs" />
-    <Compile Include="CMLauncher.cs" />
+    <Compile Include="Core\AppSettingsManager.cs" />
+    <Compile Include="Core\ServerStatusChecker.cs" />
+    <Compile Include="Core\UserDataManager.cs" />
     <Compile Include="DebugLogger.cs" />
     <Compile Include="EncryptionHelper.cs" />
     <Compile Include="FontLibrary.cs" />
-    <Compile Include="Launcher.cs" />
+    <Compile Include="Models\CMLaunchOption.cs" />
+    <Compile Include="Models\LauncherSettings.cs" />
+    <Compile Include="Models\UpdateManifest.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

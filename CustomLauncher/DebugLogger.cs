@@ -9,7 +9,7 @@ namespace CustomLauncher
         private static readonly object lockObj = new object();
 
         /// <summary>
-        /// 새 프로그램을 시작할 때 로그 파일을 초기화합니다.
+        /// ???�로그램???�작????로그 ?�일??초기?�합?�다.
         /// </summary>
         public static void Init()
         {
@@ -27,9 +27,9 @@ namespace CustomLauncher
         }
 
         /// <summary>
-        /// 로그 파일에 메시지를 추가합니다.
+        /// 로그 ?�일??메시지�?추�??�니??
         /// </summary>
-        /// <param name="message">기록할 메시지</param>
+        /// <param name="message">기록??메시지</param>
         public static void Log(string message)
         {
             try

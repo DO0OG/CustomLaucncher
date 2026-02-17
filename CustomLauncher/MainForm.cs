@@ -1,29 +1,28 @@
-﻿using CmlLib.Core;
+using CmlLib.Core;
 using CmlLib.Core.Auth;
 using CmlLib.Core.Auth.Microsoft;
 using CmlLib.Core.Installers;
+using CmlLib.Core.ModLoaders.FabricMC;
+using CmlLib.Core.Installer.Forge;
 using CmlLib.Core.ProcessBuilder;
+using CustomLauncher.Core;
+using CustomLauncher.Models;
+using NAudio.Wave;
 using System;
-using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using NAudio.Wave;
-using CmlLib.Core.Installer.Forge;
-using System.Linq;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using CmlLib.Core.ModLoaders.FabricMC;
 
 namespace CustomLauncher
 {
     public partial class MainForm : Form
     {
-        // Windows API 함수 선언
+        // 타이틀 바 드래그 이동을 위한 Windows API
         [DllImport("user32.dll")]
         public static extern bool ReleaseCapture();
 
@@ -34,52 +33,47 @@ namespace CustomLauncher
         private const int hTCAPTION = 0x2;
 
         private string directory;
-        private string settingFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "customServer_settings.txt");
-        private string versionFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "customServer_version.txt");
-        private string userInfo = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "customServer_udata");
         private readonly HttpClient _httpClient = new();
 
+        // 서버 상태 주기적 확인 타이머
         private System.Windows.Forms.Timer _serverStatusTimer;
+        private ServerStatusChecker _serverStatusChecker;
 
+        // 배경음악 재생 관련 필드
         private IWavePlayer waveOutDevice;
         private AudioFileReader audioFile;
         private string musicPath;
-
         private bool isMuted = false;
+
+        string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        CancellationTokenSource? cancellationToken;
+        MinecraftLauncher? launcher;
+        JELoginHandler loginHandler = JELoginHandlerBuilder.BuildDefault();
+        InstallerProgressChangedEventArgs? fileProgress;
 
         public MainForm()
         {
             DebugLogger.Init(); // 디버그 로그 파일 초기화
             InitializeComponent();
-            FontLibrary.Initialize(); // Initialize the font library
-            ApplyFontToControls(this); // Apply the font to all controls
+            FontLibrary.Initialize();
+            FontLibrary.ApplyToControls(this); // 전체 컨트롤에 DNFBitBitv2 폰트 적용
             this.FormBorderStyle = FormBorderStyle.None;
             this.MouseDown += new MouseEventHandler(MainForm_MouseDown);
 
-            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36");
+            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36");
 
+            _serverStatusChecker = new ServerStatusChecker(_httpClient);
             _serverStatusTimer = new System.Windows.Forms.Timer();
             _serverStatusTimer.Interval = 10000; // 10초마다 서버 상태 확인
             _serverStatusTimer.Tick += ServerStatusTimer_Tick;
-        }
-
-        private void ApplyFontToControls(Control parentControl)
-        {
-            foreach (Control control in parentControl.Controls)
-            {
-                control.Font = new Font(FontLibrary.GetFont().FontFamily, control.Font.Size, control.Font.Style);
-                if (control.HasChildren)
-                {
-                    ApplyFontToControls(control);
-                }
-            }
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             base.OnFormClosing(e);
 
-            // 리소스 정리
+            // 배경음악 리소스 해제
             if (waveOutDevice != null)
             {
                 waveOutDevice.Stop();
@@ -96,6 +90,7 @@ namespace CustomLauncher
 
         private void MainForm_MouseDown(object sender, MouseEventArgs e)
         {
+            // 좌클릭 드래그로 창 이동
             if (e.Button == MouseButtons.Left)
             {
                 ReleaseCapture();
@@ -103,29 +98,22 @@ namespace CustomLauncher
             }
         }
 
-        string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        CancellationTokenSource? cancellationToken;
-        MinecraftLauncher? launcher;
-
         private async void MainForm_Shown(object sender, EventArgs e)
         {
-            var userData = LoadUserData();
             var settings = new SettingsForm();
-            var installPath = LoadSettings();
+            var installSettings = AppSettingsManager.Load();
 
             settings.saveSettings();
-            directory = installPath.InstallPath;
+            directory = installSettings.InstallPath;
 
             if (directory == null)
                 directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".custom");
 
             try
             {
-                // 디렉토리 존재하지 않으면 생성
-                if (!System.IO.Directory.Exists(Directory))
-                {
-                    System.IO.Directory.CreateDirectory(Directory);
-                }
+                // 설치 디렉토리가 없으면 생성
+                if (!System.IO.Directory.Exists(directory))
+                    System.IO.Directory.CreateDirectory(directory);
             }
             catch (Exception ex)
             {
@@ -145,26 +133,13 @@ namespace CustomLauncher
             await CheckServerStatusAsyncs();
         }
 
+        /// <summary>
+        /// 서버 상태를 확인하고 UI 레이블을 업데이트합니다.
+        /// </summary>
         private async Task CheckServerStatusAsyncs()
         {
-            bool isOnline = await CheckServerStatusAsync();
+            bool isOnline = await _serverStatusChecker.CheckAsync();
             UpdateServerStatusLabel(isOnline);
-        }
-
-        private const string ServerStatusUrl = "https://api.mcsrvstat.us/3/주소";
-
-        private async Task<bool> CheckServerStatusAsync()
-        {
-            try
-            {
-                string content = await _httpClient.GetStringAsync(ServerStatusUrl);
-                JObject json = JObject.Parse(content);
-                return json.Value<bool>("online");
-            }
-            catch (Exception)
-            {
-                return false;
-            }
         }
 
         private void UpdateServerStatusLabel(bool isOnline)
@@ -193,22 +168,6 @@ namespace CustomLauncher
             }
         }
 
-
-
-        private string ParseVersionInfo(string updateInfo)
-        {
-            // "버전: 1.0.1" 형식을 처리하여 버전 번호만 추출합니다.
-            var lines = updateInfo.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            foreach (var line in lines)
-            {
-                if (line.StartsWith("version :"))
-                {
-                    return line.Split(':')[1].Trim();
-                }
-            }
-            return string.Empty;
-        }
-
         private void UpdateProgressBar(int processedBytes, int totalBytes)
         {
             if (progressBar1.InvokeRequired)
@@ -221,7 +180,7 @@ namespace CustomLauncher
                 {
                     if (totalBytes > 0 && processedBytes >= 0)
                     {
-                        // 진행률이 100을 넘지 않도록 보장
+                        // 진행률이 0~100 범위를 벗어나지 않도록 보정
                         int percentage = Math.Min((int)((double)processedBytes / totalBytes * 100), 100);
                         progressBar1.Value = Math.Max(0, Math.Min(percentage, progressBar1.Maximum));
                     }
@@ -232,7 +191,6 @@ namespace CustomLauncher
                 }
                 catch (Exception)
                 {
-                    // 오류 발생 시 진행률을 0으로 설정
                     progressBar1.Value = 0;
                 }
             }
@@ -247,19 +205,17 @@ namespace CustomLauncher
             else
             {
                 labelStatus.Text = status;
+                // 레이블을 수평 가운데 정렬
                 int x = (this.ClientSize.Width - labelStatus.Width) / 2;
                 labelStatus.Location = new Point(x, labelStatus.Location.Y);
             }
         }
 
-        JELoginHandler loginHandler = JELoginHandlerBuilder.BuildDefault();
-
-
         private async void btnLogin_Click(object sender, EventArgs e)
         {
             try
             {
-                // Microsoft 로그인 처리
+                // Microsoft(Xbox) 계정 인증
                 var session = await loginHandler.Authenticate();
 
                 if (session == null)
@@ -268,17 +224,9 @@ namespace CustomLauncher
                     return;
                 }
 
-                // Settings 객체 생성 및 로그인 정보 저장
-                var settings = new Settings
-                {
-                    Username = session.Username,
-                    Password = session.AccessToken,
-                    ramValue = LoadSettings().ramValue, // 기존 설정 값 로드
-                    Resolution = LoadSettings().Resolution, // 기존 설정 값 로드
-                    InstallPath = LoadSettings().InstallPath // 기존 설정 값 로드
-                };
+                // 인증 토큰을 AES 암호화하여 파일에 저장
+                UserDataManager.Save(session.Username, session.AccessToken);
 
-                SaveUserData(settings);
                 btnStartGame.Enabled = true;
                 btnLogout.Enabled = true;
                 btnLogin.Enabled = false;
@@ -289,7 +237,7 @@ namespace CustomLauncher
             catch (Exception ex)
             {
                 await LoginHandler.Signout();
-                MessageBox.Show($"로그인 또는 실행 실패: 다시 시도하세요.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("로그인 또는 실행 실패: 다시 시도하세요.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -301,6 +249,7 @@ namespace CustomLauncher
             btnLogin.Visible = true;
             btnStartGame.Visible = false;
             btnLogout.Visible = false;
+
             try
             {
                 await LoginHandler.Signout();
@@ -313,59 +262,51 @@ namespace CustomLauncher
 
         private async void btnStartGame_Click(object sender, EventArgs e)
         {
-            DebugLogger.Log("btnStartGame_Click entered.");
-            // 버튼 클릭 즉시 비활성화
+            DebugLogger.Log("btnStartGame_Click 진입.");
             btnStartGame.Enabled = false;
 
-            var installPath = LoadSettings();
-            directory = installPath.InstallPath;
+            var installSettings = AppSettingsManager.Load();
+            directory = installSettings.InstallPath;
             MinecraftPath myPath = new MinecraftPath(Path.Combine(directory));
+
             try
             {
-                var launcher = new MinecraftLauncher(Directory);
+                var launcher = new MinecraftLauncher(directory);
                 var versions = await launcher.GetAllVersionsAsync();
                 var fabricInstaller = new FabricInstaller(new HttpClient());
 
                 // 매니페스트 기반 자동 업데이트 실행
                 UpdateStatusLabel("업데이트 확인 중...");
                 bool updatesFound = await AutoUpdater.CheckForUpdatesAsync(directory);
-                if (updatesFound)
-                {
-                    UpdateStatusLabel("업데이트 완료.");
-                }
-                else
-                {
-                    UpdateStatusLabel("최신 버전입니다.");
-                }
+                UpdateStatusLabel(updatesFound ? "업데이트 완료." : "최신 버전입니다.");
 
                 // Forge 버전 정보
                 const string mcVersion = "버전";
                 const string forgeVersion = "버전";
                 string forgeVersionName = $"{mcVersion}-forge-{mcVersion}-{forgeVersion}";
 
-                // 설치된 버전 확인
+                // 설치된 Forge 버전 확인
                 bool forgeInstalled = versions.Any(v => v.Name.Equals(forgeVersionName, StringComparison.OrdinalIgnoreCase));
 
                 if (!forgeInstalled)
                 {
                     UpdateStatusLabel("Forge를 설치합니다...");
 
-                    // Forge 설치 진행률 표시 설정
-                    var fileProgress = new Progress<InstallerProgressChangedEventArgs>(e =>
+                    var fileProgress = new Progress<InstallerProgressChangedEventArgs>(ev =>
                     {
-                        UpdateStatusLabel($"[{e.EventType}] {e.Name} ({e.ProgressedTasks}/{e.TotalTasks})");
-                        UpdateProgressBar(e.ProgressedTasks, e.TotalTasks);
+                        UpdateStatusLabel($"[{ev.EventType}] {ev.Name} ({ev.ProgressedTasks}/{ev.TotalTasks})");
+                        UpdateProgressBar(ev.ProgressedTasks, ev.TotalTasks);
                     });
 
-                    var byteProgress = new Progress<ByteProgress>(e =>
+                    var byteProgress = new Progress<ByteProgress>(ev =>
                     {
-                        int percentage = (int)(e.ToRatio() * 100);
+                        int percentage = (int)(ev.ToRatio() * 100);
                         UpdateProgressBar(percentage, 100);
                     });
 
-                    var installerOutput = new Progress<string>(e =>
+                    var installerOutput = new Progress<string>(ev =>
                     {
-                        Console.WriteLine(e);
+                        Console.WriteLine(ev);
                     });
 
                     // Forge 설치 실행
@@ -382,11 +323,10 @@ namespace CustomLauncher
                 }
 
                 var session = await loginHandler.Authenticate();
-                var settings = LoadSettings();
                 var settingsForm = new SettingsForm();
                 var resolution = settingsForm.GetSelectedResolution();
 
-                // Create LaunchOption
+                // 게임 실행 옵션 구성
                 var launchOption = new MLaunchOption
                 {
                     Session = new MSession
@@ -396,22 +336,19 @@ namespace CustomLauncher
                         UUID = session.UUID,
                         Xuid = session.Xuid
                     },
-                    ServerIp = "서버주소",
+                    ServerIp = "서버IP주소",
                     ScreenWidth = resolution[0],
                     ScreenHeight = resolution[1],
                     GameLauncherName = "SERVER",
                 };
 
-                int ramValue;
-                bool isValidRamValue = int.TryParse(settings.ramValue, out ramValue);
-
-                if (isValidRamValue)
+                // RAM 설정 적용
+                if (int.TryParse(installSettings.RamValue, out int ramMb))
                 {
-                    launchOption.MaximumRamMb = ramValue;
-                    launchOption.MinimumRamMb = ramValue;
+                    launchOption.MaximumRamMb = ramMb;
+                    launchOption.MinimumRamMb = ramMb;
                 }
 
-                // Update UI
                 UpdateStatusLabel("게임 실행 중...");
                 progressBar1.Visible = true;
                 progressBar1.Style = ProgressBarStyle.Continuous;
@@ -424,10 +361,10 @@ namespace CustomLauncher
 
                 UpdateProgressBar(50, 100);
 
-                // 프로세스 이벤트 설정
+                // 프로세스 이벤트 설정 및 시작
                 var processUtil = new ProcessWrapper(process);
                 processUtil.OutputReceived += (s, args) => UpdateProcessOutput(args);
-                processUtil.Exited += (s, args) => OnGameProcessExited();  // 게임 종료 이벤트 추가
+                processUtil.Exited += (s, args) => OnGameProcessExited(); // 게임 종료 이벤트
                 processUtil.StartWithEvents();
 
                 UpdateProgressBar(100, 100);
@@ -444,9 +381,7 @@ namespace CustomLauncher
         private void UpdateProcessOutput(string output)
         {
             if (!string.IsNullOrEmpty(output))
-            {
                 Console.WriteLine(output);
-            }
         }
 
         private void OnGameProcessExited()
@@ -473,113 +408,17 @@ namespace CustomLauncher
             btnStartGame.Enabled = true;
         }
 
-        private Settings LoadSettings()
-        {
-            var settings = new Settings();
-
-            if (File.Exists(SettingFile))
-            {
-                try
-                {
-                    var settingsLines = File.ReadAllLines(SettingFile);
-                    if (settingsLines.Length >= 3)
-                    {
-                        settings.Resolution = settingsLines[0];
-                        settings.InstallPath = settingsLines[1];
-                        settings.ramValue = settingsLines[2];
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"설정 로드 실패: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
-
-            return settings;
-        }
-
-        private Settings LoadUserData()
-        {
-            var settings = new Settings();
-
-            if (File.Exists(UserInfo))
-            {
-                try
-                {
-                    var encryptedData = File.ReadAllBytes(UserInfo);
-                    var decryptedData = EncryptionHelper.Decrypt(encryptedData);
-                    var settingsLines = decryptedData.Split('\n');
-
-                    if (settingsLines.Length >= 2)
-                    {
-                        settings.Username = settingsLines[0];
-                        settings.Password = settingsLines[1];
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"설정 로드 실패: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
-
-            return settings;
-        }
-
-        private Settings LoadVersion()
-        {
-            var settings = new Settings();
-
-            if (File.Exists(versionFilePath))
-            {
-                try
-                {
-                    var versionData = File.ReadAllLines(versionFilePath);
-                    if (versionData.Length == 1)
-                    {
-                        settings.versionData = versionData[0];
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"설정 로드 실패: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
-
-            return settings;
-        }
-
-        private void SaveUserData(Settings settings)
-        {
-            try
-            {
-                var settingsString = $"{settings.Username}\n{settings.Password}";
-                var encryptedData = EncryptionHelper.Encrypt(settingsString);
-                File.WriteAllBytes(UserInfo, encryptedData);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"설정 저장 실패: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        InstallerProgressChangedEventArgs? fileProgress;
-
+        // Windows 메시지 상수 프로퍼티
         public static int WM_NCLBUTTONDOWN => wM_NCLBUTTONDOWN;
-
         public static int HTCAPTION => hTCAPTION;
 
         public string Directory { get => directory; set => directory = value; }
-        public string SettingFile { get => settingFile; set => settingFile = value; }
-        public string UserInfo { get => userInfo; set => userInfo = value; }
-
         public HttpClient HttpClient => _httpClient;
-
         public string AppDataPath { get => appDataPath; set => appDataPath = value; }
         public CancellationTokenSource CancellationToken { get => cancellationToken; set => cancellationToken = value; }
         public MinecraftLauncher Launcher { get => launcher; set => launcher = value; }
         public JELoginHandler LoginHandler { get => loginHandler; set => loginHandler = value; }
         public InstallerProgressChangedEventArgs FileProgress { get => fileProgress; set => fileProgress = value; }
-
 
         private void btnSettings1_Click(object sender, EventArgs e)
         {
@@ -593,21 +432,12 @@ namespace CustomLauncher
             settingsForm.ShowDialog();
         }
 
-        private class Settings
-        {
-            public string Username { get; set; }
-            public string Password { get; set; }
-            public string ramValue { get; set; }
-            public string Resolution { get; set; }
-            public string InstallPath { get; set; }
-            public string versionData { get; set; }
-        }
-
         private void EXIT_Click(object sender, EventArgs e)
         {
             Application.Exit();
         }
 
+        // 버튼 이미지 마우스 이벤트 핸들러
         private void btnLogin_MouseDown(object sender, MouseEventArgs e)
         {
             btnLogin.BackgroundImage = new Bitmap(Properties.Resources.login_clicked);

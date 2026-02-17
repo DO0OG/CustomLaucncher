@@ -1,24 +1,19 @@
-﻿using System;
+using System;
 using System.Drawing;
-using System.IO;
 using System.Windows.Forms;
+using CustomLauncher.Core;
 
 namespace CustomLauncher
 {
     public partial class SettingsForm : Form
     {
-        private string settingsFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "customServer_settings.txt");
-        private string versionFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "customServer_version.txt");
-
-        public string SettingsFilePath { get => settingsFilePath; set => settingsFilePath = value; }
-        public string VersionFilePath { get => versionFilePath; set => versionFilePath = value; }
-
         public SettingsForm()
         {
             InitializeComponent();
             PopulateResolutionComboBox();
 
-            string defaultPath = Path.Combine(
+            // 기본 설치 경로 설정
+            string defaultPath = System.IO.Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                 ".custom"
             );
@@ -34,38 +29,25 @@ namespace CustomLauncher
         {
             try
             {
-                ApplyFontToControls(this);
+                FontLibrary.ApplyToControls(this);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error applying font: {ex.Message}");
-            }
-        }
-
-        private void ApplyFontToControls(Control parentControl)
-        {
-            foreach (Control control in parentControl.Controls)
-            {
-                control.Font = new Font(FontLibrary.GetFont().FontFamily, control.Font.Size, control.Font.Style);
-                if (control.HasChildren)
-                {
-                    ApplyFontToControls(control);
-                }
+                System.Diagnostics.Debug.WriteLine($"폰트 적용 오류: {ex.Message}");
             }
         }
 
         private void LoadSettings()
         {
-            if (File.Exists(SettingsFilePath))
-            {
-                var settings = File.ReadAllLines(SettingsFilePath);
-                if (settings.Length >= 3)
-                {
-                    cboResolution.SelectedItem = settings[0];
-                    txtInstallPath.Text = settings[1];
-                    ramValue.Text = settings[2];
-                }
-            }
+            // AppSettingsManager를 통해 설정 파일에서 불러옴
+            var settings = AppSettingsManager.Load();
+
+            if (settings.Resolution != null)
+                cboResolution.SelectedItem = settings.Resolution;
+            if (settings.InstallPath != null)
+                txtInstallPath.Text = settings.InstallPath;
+            if (settings.RamValue != null)
+                ramValue.Text = settings.RamValue;
         }
 
         private void PopulateResolutionComboBox()
@@ -77,49 +59,45 @@ namespace CustomLauncher
             cboResolution.Items.Add("2560x1440");
 
             if (cboResolution.Items.Count > 0)
-            {
-                cboResolution.SelectedIndex = 3;
-            }
+                cboResolution.SelectedIndex = 3; // 기본값: 1920x1080
         }
 
+        /// <summary>
+        /// 현재 선택된 해상도를 [너비, 높이] 배열로 반환합니다.
+        /// 파싱 실패 시 기본값 [1920, 1080]을 반환합니다.
+        /// </summary>
         public int[] GetSelectedResolution()
         {
-            string selectedResolution = cboResolution.SelectedItem?.ToString() ?? "1920x1080"; // 기본값으로 1920x1080 설정
+            string selected = cboResolution.SelectedItem?.ToString() ?? "1920x1080";
+            var parts = selected.Split('x');
 
-            var resolutionParts = selectedResolution.Split('x');
-
-            if (resolutionParts.Length == 2 &&
-                int.TryParse(resolutionParts[0], out int width) &&
-                int.TryParse(resolutionParts[1], out int height))
+            if (parts.Length == 2 &&
+                int.TryParse(parts[0], out int width) &&
+                int.TryParse(parts[1], out int height))
             {
                 return new int[] { width, height };
             }
-            else
-            {
-                return new int[] { 1920, 1080 };
-            }
+
+            return new int[] { 1920, 1080 };
         }
 
         private void btnSave_Click(object sender, EventArgs e)
         {
-            var main = new MainForm();
-
             saveSettings();
-
             MessageBox.Show("설정이 저장되었습니다.");
             this.Close();
         }
 
+        /// <summary>
+        /// 현재 UI 설정값을 AppSettingsManager를 통해 파일에 저장합니다.
+        /// </summary>
         public void saveSettings()
         {
-            var settings = new string[]
-            {
-                cboResolution.SelectedItem.ToString(),
+            AppSettingsManager.Save(
+                cboResolution.SelectedItem?.ToString() ?? "1920x1080",
                 txtInstallPath.Text,
                 ramValue.Text
-            };
-
-            File.WriteAllLines(SettingsFilePath, settings);
+            );
         }
 
         private void btnBrowsePath_Click(object sender, EventArgs e)
@@ -127,12 +105,8 @@ namespace CustomLauncher
             using (FolderBrowserDialog folderDialog = new FolderBrowserDialog())
             {
                 if (folderDialog.ShowDialog() == DialogResult.OK)
-                {
                     txtInstallPath.Text = folderDialog.SelectedPath;
-                }
             }
         }
-
-
     }
 }

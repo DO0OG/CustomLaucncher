@@ -240,6 +240,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AutoUpdater.cs" />
+    <Compile Include="LauncherConfig.cs" />
     <Compile Include="Core\AppSettingsManager.cs" />
     <Compile Include="Core\ServerStatusChecker.cs" />
     <Compile Include="Core\UserDataManager.cs" />

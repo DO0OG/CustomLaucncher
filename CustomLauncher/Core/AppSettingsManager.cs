@@ -14,7 +14,7 @@ namespace CustomLauncher.Core
         /// <summary>설정 파일 경로 (AppData 폴더)</summary>
         public static readonly string SettingsFilePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "customServer_settings.txt");
+            LauncherConfig.SettingsFileName);
 
         /// <summary>
         /// 설정 파일에서 런처 설정을 불러옵니다.

@@ -107,7 +107,7 @@ namespace CustomLauncher
             directory = installSettings.InstallPath;
 
             if (directory == null)
-                directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".custom");
+                directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), LauncherConfig.DefaultInstallFolderName);
 
             try
             {
@@ -311,8 +311,8 @@ namespace CustomLauncher
                 UpdateStatusLabel(updatesFound ? "업데이트 완료." : "최신 버전입니다.");
 
                 // Forge 버전 정보
-                const string mcVersion = "버전";
-                const string forgeVersion = "버전";
+                const string mcVersion = LauncherConfig.McVersion;
+                const string forgeVersion = LauncherConfig.ForgeVersion;
                 string forgeVersionName = $"{mcVersion}-forge-{mcVersion}-{forgeVersion}";
 
                 // 설치된 Forge 버전 확인
@@ -366,10 +366,10 @@ namespace CustomLauncher
                         UUID = session.UUID,
                         Xuid = session.Xuid
                     },
-                    ServerIp = "서버IP주소",
+                    ServerIp = LauncherConfig.ServerIp,
                     ScreenWidth = resolution[0],
                     ScreenHeight = resolution[1],
-                    GameLauncherName = "SERVER",
+                    GameLauncherName = LauncherConfig.GameLauncherName,
                 };
 
                 // RAM 설정 적용

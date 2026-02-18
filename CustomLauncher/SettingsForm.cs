@@ -15,7 +15,7 @@ namespace CustomLauncher
             // 기본 설치 경로 설정
             string defaultPath = System.IO.Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                ".custom"
+                LauncherConfig.DefaultInstallFolderName
             );
             txtInstallPath.Text = defaultPath;
 

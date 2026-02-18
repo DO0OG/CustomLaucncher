@@ -18,7 +18,7 @@ namespace CustomLauncher
     public static class AutoUpdater
     {
         /// <summary>업데이트 매니페스트 JSON 다운로드 URL</summary>
-        private const string ManifestUrl = "Manifest주소";
+        private const string ManifestUrl = LauncherConfig.ManifestUrl;
 
         /// <summary>
         /// 원격 매니페스트와 로컬 파일을 비교하여 필요한 파일을 업데이트합니다.
@@ -175,7 +175,7 @@ namespace CustomLauncher
         {
             string sevenZipExePath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "7Ziptemp", "7z.exe");
+                LauncherConfig.SevenZipTempFolder, "7z.exe");
 
             if (!File.Exists(sevenZipExePath))
                 throw new FileNotFoundException("7-Zip 실행 파일을 찾을 수 없습니다.", sevenZipExePath);

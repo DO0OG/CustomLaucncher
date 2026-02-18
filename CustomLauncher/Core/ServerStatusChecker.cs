@@ -11,7 +11,7 @@ namespace CustomLauncher.Core
     public class ServerStatusChecker
     {
         /// <summary>서버 상태 API 엔드포인트 (mcsrvstat.us v3)</summary>
-        private const string StatusApiUrl = "https://api.mcsrvstat.us/3/주소";
+        private const string StatusApiUrl = LauncherConfig.ServerStatusApiUrl;
 
         private readonly HttpClient _httpClient;
 

@@ -15,7 +15,7 @@ namespace CustomLauncher.Core
         /// <summary>암호화된 사용자 데이터 파일 경로 (AppData 폴더)</summary>
         private static readonly string UserDataFilePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "customServer_udata");
+            LauncherConfig.UserDataFileName);
 
         /// <summary>
         /// 암호화된 사용자 데이터 파일에서 인증 정보를 불러옵니다.

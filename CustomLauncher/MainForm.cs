@@ -126,6 +126,36 @@ namespace CustomLauncher
             await CheckServerStatusAsyncs();
             await initializeLauncher(new MinecraftPath());
             _serverStatusTimer.Start();
+
+            // 저장된 사용자 데이터가 있으면 자동 로그인 시도, 없으면 CmlLib 캐시도 초기화
+            var userData = UserDataManager.Load();
+            if (!string.IsNullOrEmpty(userData.Username))
+            {
+                try
+                {
+                    var session = await loginHandler.Authenticate();
+                    if (session != null)
+                    {
+                        UserDataManager.Save(session.Username, session.AccessToken);
+                        btnStartGame.Enabled = true;
+                        btnLogout.Enabled = true;
+                        btnLogin.Enabled = false;
+                        btnLogin.Visible = false;
+                        btnStartGame.Visible = true;
+                        btnLogout.Visible = true;
+                    }
+                }
+                catch
+                {
+                    // 자동 로그인 실패 시 CmlLib 캐시 초기화 후 로그인 버튼 표시
+                    await loginHandler.Signout();
+                }
+            }
+            else
+            {
+                // udata 없음 = 미로그인 상태로 간주, CmlLib 캐시도 초기화
+                await loginHandler.Signout();
+            }
         }
 
         private async void ServerStatusTimer_Tick(object sender, EventArgs e)

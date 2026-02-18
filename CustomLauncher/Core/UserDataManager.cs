@@ -40,10 +40,10 @@ namespace CustomLauncher.Core
                     settings.Password = lines[1];
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                MessageBox.Show($"사용자 데이터 로드 실패: {ex.Message}", "오류",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                // 복호화 실패 = 구형 형식 또는 손상된 파일 → 삭제 후 재로그인 유도
+                File.Delete(UserDataFilePath);
             }
 
             return settings;

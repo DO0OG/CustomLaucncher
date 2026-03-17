@@ -359,13 +359,7 @@ namespace CustomLauncher
                 // 게임 실행 옵션 구성
                 var launchOption = new MLaunchOption
                 {
-                    Session = new MSession
-                    {
-                        Username = session.Username,
-                        AccessToken = session.AccessToken,
-                        UUID = session.UUID,
-                        Xuid = session.Xuid
-                    },
+                    Session = session,  // 채팅 서명 키 정보 보존을 위해 원본 session 직접 사용
                     ServerIp = LauncherConfig.ServerIp,
                     ScreenWidth = resolution[0],
                     ScreenHeight = resolution[1],

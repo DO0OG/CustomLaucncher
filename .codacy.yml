@@ -5,26 +5,16 @@ engines:
   jacksonlinter:
     enabled: false
   remark-lint:
-    enabled: true
-tools:
-  eslint: false
-  jacksonlinter: false
+    enabled: false
 exclude_paths:
-  - "**/bin/**"
-  - "**/obj/**"
-  - "**/packages/**"
-  - "**/.vs/**"
-  - "**/.claude/**"
-  - "**/Resources/**"
-  - "**/Properties/**"
-  - "**/*.resources"
-  - "**/*.resx"
-  - "**/*.ico"
-  - "**/*.png"
-  - "**/*.jpg"
-  - "**/*.zip"
-  - "**/*.ttf"
-  - "**/App.config"
-  - "**/packages.config"
-  - "**/*.sln"
-  - "**/*.csproj"
+  - '**/bin/**'
+  - '**/obj/**'
+  - '**/packages/**'
+  - '**/Resources/**'
+  - '**/Properties/**'
+  - '**/*.resx'
+  - '**/*.resources'
+  - '**/*.json'
+  - '**/*.config'
+  - '**/*.sln'
+  - '**/*.csproj'

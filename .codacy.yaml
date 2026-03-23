@@ -1,0 +1,30 @@
+---
+engines:
+  eslint:
+    enabled: false
+  jacksonlinter:
+    enabled: false
+  remark-lint:
+    enabled: false
+exclude_paths:
+  - "**/bin/**"
+  - "**/obj/**"
+  - "**/packages/**"
+  - "**/.vs/**"
+  - "**/.claude/**"
+  - "**/Resources/**"
+  - "**/Properties/**"
+  - "**/*.Designer.cs"
+  - "**/*.resx"
+  - "**/*.resources"
+  - "**/*.pfx"
+  - "**/*.ico"
+  - "**/*.png"
+  - "**/*.jpg"
+  - "**/*.ttf"
+  - "**/*.zip"
+  - "**/*.json"
+  - "**/*.config"
+  - "**/*.sln"
+  - "**/*.csproj"
+  - "manifest.json"

@@ -8,14 +8,15 @@ engines:
     enabled: true
 tools:
   eslint: false
+  jacksonlinter: false
 exclude_paths:
-  - "bin/**"
-  - "obj/**"
-  - "packages/**"
-  - ".vs/**"
-  - ".claude/**"
-  - "Resources/**"
-  - "Properties/**"
+  - "**/bin/**"
+  - "**/obj/**"
+  - "**/packages/**"
+  - "**/.vs/**"
+  - "**/.claude/**"
+  - "**/Resources/**"
+  - "**/Properties/**"
   - "**/*.resources"
   - "**/*.resx"
   - "**/*.ico"
@@ -25,3 +26,5 @@ exclude_paths:
   - "**/*.ttf"
   - "**/App.config"
   - "**/packages.config"
+  - "**/*.sln"
+  - "**/*.csproj"

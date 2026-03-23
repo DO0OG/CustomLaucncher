@@ -310,46 +310,64 @@ namespace CustomLauncher
                 bool updatesFound = await AutoUpdater.CheckForUpdatesAsync(directory);
                 UpdateStatusLabel(updatesFound ? "업데이트 완료." : "최신 버전입니다.");
 
-                // Forge 버전 정보
+                // 모드 로더 설정
                 const string mcVersion = LauncherConfig.McVersion;
-                const string forgeVersion = LauncherConfig.ForgeVersion;
-                string forgeVersionName = $"{mcVersion}-forge-{mcVersion}-{forgeVersion}";
+                string targetVersionName = mcVersion; // 기본값은 바닐라
 
-                // 설치된 Forge 버전 확인
-                bool forgeInstalled = versions.Any(v => v.Name.Equals(forgeVersionName, StringComparison.OrdinalIgnoreCase));
-
-                if (!forgeInstalled)
+                if (LauncherConfig.ModLoaderType.Equals("forge", StringComparison.OrdinalIgnoreCase))
                 {
-                    UpdateStatusLabel("Forge를 설치합니다...");
+                    const string forgeVersion = LauncherConfig.ForgeVersion;
+                    targetVersionName = $"{mcVersion}-forge-{mcVersion}-{forgeVersion}";
 
-                    var fileProgress = new Progress<InstallerProgressChangedEventArgs>(ev =>
+                    bool forgeInstalled = versions.Any(v => v.Name.Equals(targetVersionName, StringComparison.OrdinalIgnoreCase));
+
+                    if (!forgeInstalled)
                     {
-                        UpdateStatusLabel($"[{ev.EventType}] {ev.Name} ({ev.ProgressedTasks}/{ev.TotalTasks})");
-                        UpdateProgressBar(ev.ProgressedTasks, ev.TotalTasks);
-                    });
+                        UpdateStatusLabel("Forge를 설치합니다...");
 
-                    var byteProgress = new Progress<ByteProgress>(ev =>
+                        var fileProgress = new Progress<InstallerProgressChangedEventArgs>(ev =>
+                        {
+                            UpdateStatusLabel($"[{ev.EventType}] {ev.Name} ({ev.ProgressedTasks}/{ev.TotalTasks})");
+                            UpdateProgressBar(ev.ProgressedTasks, ev.TotalTasks);
+                        });
+
+                        var byteProgress = new Progress<ByteProgress>(ev =>
+                        {
+                            int percentage = (int)(ev.ToRatio() * 100);
+                            UpdateProgressBar(percentage, 100);
+                        });
+
+                        var installerOutput = new Progress<string>(ev =>
+                        {
+                            Console.WriteLine(ev);
+                        });
+
+                        // Forge 설치 실행
+                        var forge = new ForgeInstaller(launcher);
+                        var version_name = await forge.Install(mcVersion, forgeVersion, new ForgeInstallOptions
+                        {
+                            FileProgress = fileProgress,
+                            ByteProgress = byteProgress,
+                            InstallerOutput = installerOutput
+                        });
+
+                        Console.WriteLine($"설치된 Forge 버전: {version_name}");
+                        targetVersionName = version_name;
+                    }
+                }
+                else if (LauncherConfig.ModLoaderType.Equals("fabric", StringComparison.OrdinalIgnoreCase))
+                {
+                    const string fabricVersion = LauncherConfig.FabricVersion;
+                    targetVersionName = $"fabric-loader-{fabricVersion}-{mcVersion}";
+
+                    bool fabricInstalled = versions.Any(v => v.Name.Equals(targetVersionName, StringComparison.OrdinalIgnoreCase));
+
+                    if (!fabricInstalled)
                     {
-                        int percentage = (int)(ev.ToRatio() * 100);
-                        UpdateProgressBar(percentage, 100);
-                    });
-
-                    var installerOutput = new Progress<string>(ev =>
-                    {
-                        Console.WriteLine(ev);
-                    });
-
-                    // Forge 설치 실행
-                    var forge = new ForgeInstaller(launcher);
-                    var version_name = await forge.Install(mcVersion, forgeVersion, new ForgeInstallOptions
-                    {
-                        FileProgress = fileProgress,
-                        ByteProgress = byteProgress,
-                        InstallerOutput = installerOutput
-                    });
-
-                    Console.WriteLine($"설치된 Forge 버전: {version_name}");
-                    forgeVersionName = version_name;
+                        UpdateStatusLabel("Fabric을 설치합니다...");
+                        targetVersionName = await fabricInstaller.Install(mcVersion, fabricVersion, myPath);
+                        Console.WriteLine($"설치된 Fabric 버전: {targetVersionName}");
+                    }
                 }
 
                 var session = await loginHandler.Authenticate();
@@ -381,7 +399,7 @@ namespace CustomLauncher
                 btnStartGame.Enabled = false;
                 UpdateProgressBar(20, 100);
 
-                var process = await launcher.CreateProcessAsync(forgeVersionName, launchOption);
+                var process = await launcher.CreateProcessAsync(targetVersionName, launchOption);
 
                 UpdateProgressBar(50, 100);
 

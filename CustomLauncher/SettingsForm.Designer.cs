@@ -27,6 +27,7 @@ namespace CustomLauncher
             this.label1 = new System.Windows.Forms.Label();
             this.ramValue = new System.Windows.Forms.TextBox();
             this.version = new System.Windows.Forms.Label();
+            this.btnAbout = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // cboResolution
@@ -69,7 +70,7 @@ namespace CustomLauncher
             // btnSave
             // 
             this.btnSave.Font = new System.Drawing.Font("맑은 고딕", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.btnSave.Location = new System.Drawing.Point(154, 189);
+            this.btnSave.Location = new System.Drawing.Point(212, 189);
             this.btnSave.Name = "btnSave";
             this.btnSave.Size = new System.Drawing.Size(111, 41);
             this.btnSave.TabIndex = 10;
@@ -119,9 +120,21 @@ namespace CustomLauncher
             this.version.TabIndex = 14;
             this.version.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
+            // btnAbout
+            // 
+            this.btnAbout.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.btnAbout.Location = new System.Drawing.Point(95, 189);
+            this.btnAbout.Name = "btnAbout";
+            this.btnAbout.Size = new System.Drawing.Size(111, 41);
+            this.btnAbout.TabIndex = 15;
+            this.btnAbout.Text = "라이선스 정보";
+            this.btnAbout.UseVisualStyleBackColor = true;
+            this.btnAbout.Click += new System.EventHandler(this.btnAbout_Click);
+            // 
             // SettingsForm
             // 
             this.ClientSize = new System.Drawing.Size(417, 247);
+            this.Controls.Add(this.btnAbout);
             this.Controls.Add(this.version);
             this.Controls.Add(this.ramValue);
             this.Controls.Add(this.label1);
@@ -148,5 +161,6 @@ namespace CustomLauncher
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TextBox ramValue;
         private System.Windows.Forms.Label version;
+        private System.Windows.Forms.Button btnAbout;
     }
 }

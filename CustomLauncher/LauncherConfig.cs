@@ -13,8 +13,14 @@ namespace CustomLauncher
         /// <summary>마인크래프트 버전 (예: "1.20.1")</summary>
         public const string McVersion = "버전";
 
+        /// <summary>모드 로더 타입 ("forge", "fabric", "none")</summary>
+        public const string ModLoaderType = "forge";
+
         /// <summary>Forge 버전 (예: "47.3.0")</summary>
         public const string ForgeVersion = "버전";
+
+        /// <summary>Fabric 버전 (예: "0.15.7")</summary>
+        public const string FabricVersion = "버전";
 
         // ──────────────────────────────────────────────────────────────
         // 서버 주소

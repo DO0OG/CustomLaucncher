@@ -239,6 +239,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AboutForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="AutoUpdater.cs" />
     <Compile Include="LauncherConfig.cs" />
     <Compile Include="Core\AppSettingsManager.cs" />

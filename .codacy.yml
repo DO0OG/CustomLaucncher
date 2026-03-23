@@ -9,6 +9,7 @@ exclude_paths:
   - "**/obj/**"
   - "**/packages/**"
   - "**/.vs/**"
+  - "**/.claude/**"
   - "**/Resources/**"
   - "**/Properties/**"
   - "**/*.Designer.cs"

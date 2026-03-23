@@ -4,14 +4,14 @@ engines:
     enabled: false
   jacksonlinter:
     enabled: false
-  remark-lint:
-    enabled: false
+  remark-lint:    enabled: false
 exclude_paths:
   - '**/bin/**'
   - '**/obj/**'
   - '**/packages/**'
   - '**/Resources/**'
   - '**/Properties/**'
+  - '**/*.Designer.cs'
   - '**/*.resx'
   - '**/*.resources'
   - '**/*.json'

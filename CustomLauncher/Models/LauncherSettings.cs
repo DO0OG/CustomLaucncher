@@ -1,4 +1,4 @@
-﻿namespace CustomLauncher.Models
+namespace CustomLauncher.Models
 {
     /// <summary>
     /// 런처 설정 및 사용자 인증 정보를 담는 데이터 모델

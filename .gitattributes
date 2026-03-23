@@ -1,0 +1,31 @@
+# Binary files - prevent diff and encoding issues
+*.ico     binary
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.bmp     binary
+*.ttf     binary
+*.woff    binary
+*.woff2   binary
+*.zip     binary
+*.7z      binary
+*.rar     binary
+*.pfx     binary
+*.p12     binary
+*.snk     binary
+*.dll     binary
+*.exe     binary
+*.pdb     binary
+
+# Windows line endings for C# source files
+*.cs      text eol=crlf
+*.csproj  text eol=crlf
+*.sln     text eol=crlf
+*.resx    text eol=crlf
+*.config  text eol=crlf
+*.xml     text eol=crlf
+*.json    text eol=crlf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.md      text eol=lf

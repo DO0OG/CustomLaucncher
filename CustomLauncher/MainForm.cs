@@ -1,4 +1,4 @@
-using CmlLib.Core;
+﻿using CmlLib.Core;
 using CmlLib.Core.Auth;
 using CmlLib.Core.Auth.Microsoft;
 using CmlLib.Core.Installers;

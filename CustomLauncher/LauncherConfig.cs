@@ -1,4 +1,4 @@
-namespace CustomLauncher
+﻿namespace CustomLauncher
 {
     /// <summary>
     /// 런처 전체에서 사용하는 유동적인 설정값을 한 곳에서 관리합니다.

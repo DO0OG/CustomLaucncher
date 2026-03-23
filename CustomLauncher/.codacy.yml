@@ -1,0 +1,10 @@
+---
+exclude_paths:
+  - "**/bin/**"
+  - "**/obj/**"
+  - "**/Resources/**"
+  - "**/*.resources"
+  - "**/*.resx"
+  - ".claude/**"
+  - ".vs/**"
+  - "packages/**"

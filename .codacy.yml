@@ -1,10 +1,21 @@
----
+﻿---
+engines:
+  eslint:
+    enabled: false
+  remark-lint:
+    enabled: true
 exclude_paths:
-  - "**/bin/**"
-  - "**/obj/**"
-  - "**/Resources/**"
+  - "CustomLauncher/bin/**"
+  - "CustomLauncher/obj/**"
+  - "CustomLauncher/packages/**"
+  - "CustomLauncher/.vs/**"
+  - "CustomLauncher/.claude/**"
+  - "CustomLauncher/Resources/**"
+  - "CustomLauncher/Properties/**"
   - "**/*.resources"
   - "**/*.resx"
-  - ".claude/**"
-  - ".vs/**"
-  - "packages/**"
+  - "**/*.ico"
+  - "**/*.png"
+  - "**/*.jpg"
+  - "**/*.ttf"
+  - "**/App.config"

@@ -1,6 +1,6 @@
 using System;
-using System.Windows.Forms;
 using System.Drawing;
+using System.Windows.Forms;
 
 namespace CustomLauncher
 {
@@ -14,62 +14,74 @@ namespace CustomLauncher
 
         private void InitializeComponent()
         {
-            this.Text = "오픈소스 라이선스 정보";
-            this.Size = new Size(500, 400);
+            this.Text = "오픈소스 라이선스";
+            this.Size = new Size(380, 300);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
+            this.BackColor = Color.White;
 
-            TextBox txtLicense = new TextBox();
-            txtLicense.Multiline = true;
-            txtLicense.ReadOnly = true;
-            txtLicense.ScrollBars = ScrollBars.Vertical;
-            txtLicense.Dock = DockStyle.Fill;
-            txtLicense.Font = new Font("Consolas", 9F);
-            
-            txtLicense.Text = @"[Open Source Licenses]
+            var pnlContent = new Panel();
+            pnlContent.Dock = DockStyle.Fill;
+            pnlContent.Padding = new Padding(20, 16, 20, 0);
 
-1. CmlLib.Core
-License: MIT License
-Copyright (c) 2021-2024 CmlLib.Core Contributors
-https://github.com/CmlLib/CmlLib.Core
+            var lblTitle = new Label();
+            lblTitle.Text = "사용된 오픈소스 라이브러리";
+            lblTitle.Font = new Font("맑은 고딕", 10F, FontStyle.Bold);
+            lblTitle.Dock = DockStyle.Top;
+            lblTitle.Height = 28;
 
-2. Newtonsoft.Json
-License: MIT License
-Copyright (c) 2007 James Newton-King
-https://github.com/JamesNK/Newtonsoft.Json
+            var lblList = new Label();
+            lblList.Text =
+                "CmlLib.Core  —  MIT License\r\n" +
+                "CmlLib.Core.Auth.Microsoft  —  MIT License\r\n" +
+                "CmlLib.Core.Installer.Forge  —  MIT License\r\n" +
+                "Newtonsoft.Json  —  MIT License\r\n" +
+                "NAudio  —  MIT License\r\n" +
+                "RestSharp  —  Apache 2.0\r\n" +
+                "SevenZipSharp  —  LGPL v3\r\n" +
+                "HtmlAgilityPack  —  MIT License";
+            lblList.Font = new Font("맑은 고딕", 9F);
+            lblList.ForeColor = Color.FromArgb(60, 60, 60);
+            lblList.Dock = DockStyle.Fill;
+            lblList.AutoSize = false;
 
-3. NAudio
-License: MIT License
-Copyright (c) 2020 Mark Heath
-https://github.com/naudio/NAudio
+            var sep = new Panel();
+            sep.Dock = DockStyle.Bottom;
+            sep.Height = 1;
+            sep.BackColor = Color.FromArgb(220, 220, 220);
+            sep.Margin = new Padding(0, 8, 0, 0);
 
-4. SevenZipSharp
-License: MIT License / LGPL
-https://github.com/squid-box/SevenZipSharp
+            pnlContent.Controls.Add(lblList);
+            pnlContent.Controls.Add(lblTitle);
 
-5. HtmlAgilityPack
-License: MIT License
-https://github.com/zzzprojects/html-agility-pack
+            var pnlFooter = new Panel();
+            pnlFooter.Dock = DockStyle.Bottom;
+            pnlFooter.Height = 52;
+            pnlFooter.BackColor = Color.FromArgb(248, 248, 248);
 
---------------------------------------------------
-MIT License Summary:
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the ""Software""), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-";
-
-            this.Controls.Add(txtLicense);
-
-            Button btnClose = new Button();
+            var btnClose = new Button();
             btnClose.Text = "닫기";
-            btnClose.Dock = DockStyle.Bottom;
-            btnClose.Height = 40;
+            btnClose.Size = new Size(80, 30);
+            btnClose.FlatStyle = FlatStyle.Flat;
+            btnClose.FlatAppearance.BorderColor = Color.FromArgb(180, 180, 180);
+            btnClose.FlatAppearance.MouseOverBackColor = Color.FromArgb(230, 230, 230);
+            btnClose.Font = new Font("맑은 고딕", 9F);
             btnClose.Click += (s, e) => this.Close();
-            this.Controls.Add(btnClose);
+
+            pnlFooter.Controls.Add(btnClose);
+            pnlFooter.Resize += (s, e) =>
+            {
+                btnClose.Location = new Point(
+                    (pnlFooter.Width - btnClose.Width) / 2,
+                    (pnlFooter.Height - btnClose.Height) / 2
+                );
+            };
+
+            this.Controls.Add(pnlContent);
+            this.Controls.Add(sep);
+            this.Controls.Add(pnlFooter);
         }
     }
 }

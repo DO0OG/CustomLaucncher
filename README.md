@@ -37,6 +37,15 @@ dotnet run --project CustomLauncher.ManifestTool -- diff old.json distribution.j
 아카이브는 파일 확장자로 추측하지 않습니다. 압축 해제가 필요한 모듈만
 `--packaging archive`를 명시해야 합니다.
 
+## 문서
+
+- [`docs/OPERATOR_GUIDE.ko.md`](docs/OPERATOR_GUIDE.ko.md) — **서버 운영자용 한글 가이드.**
+  새 서버용 런처 설정, 배포 폴더 구성, Seafile 업로드, 매니페스트 생성까지 전 과정
+- [`docs/AUTH_FLOW.md`](docs/AUTH_FLOW.md) — Microsoft 인증 및 Azure 앱 등록
+- [`docs/DISTRIBUTION_SCHEMA.md`](docs/DISTRIBUTION_SCHEMA.md) — 매니페스트 스키마와 호스팅 방식
+- [`docs/DEPENDENCY_AUDIT.md`](docs/DEPENDENCY_AUDIT.md) — 의존성 감사
+- [`docs/QA_MATRIX.md`](docs/QA_MATRIX.md) — 자동/수동 검증 범위
+
 ## 배포 전 필수 작업
 
 공개 릴리스 전에는 실제 Microsoft 계정과 대상 서버 배포본을 이용한 3개 OS

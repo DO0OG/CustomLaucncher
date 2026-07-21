@@ -22,7 +22,9 @@ public sealed class GameSessionPreparer(
     IModLoaderInstaller modLoader,
     IGameRuntime runtime,
     IJavaProvisioner? javaProvisioner = null,
-    Func<IReadOnlyCollection<string>>? disabledOptionalModules = null)
+    Func<IReadOnlyCollection<string>>? disabledOptionalModules = null,
+    IServerListWriter? serverList = null,
+    string? gameDirectory = null)
 {
     public async Task<PreparedGameSession> PrepareAsync(
         MLaunchOption launchOption,
@@ -68,6 +70,11 @@ public sealed class GameSessionPreparer(
             await javaProvisioner.EnsureAsync(distribution.Java, launchOption, false, progress, cancellationToken);
         if (distribution.Java.MinRamMb is int requiredRam && launchOption.MaximumRamMb < requiredRam)
             warning = $"서버 권장 최소 메모리는 {requiredRam}MB입니다. 현재 최대값은 {launchOption.MaximumRamMb}MB입니다.";
+
+        // Best effort: the player can always add the server by hand, so a failure here is not
+        // allowed to stop the launch.
+        if (serverList is not null && gameDirectory is not null)
+            serverList.Register(gameDirectory, LauncherConfig.ServerName, LauncherConfig.ServerAddress);
 
         var targetVersion = await modLoader.EnsureInstalledAsync(progress, cancellationToken);
         progress?.Report(new LaunchProgress("게임 파일 설치", 0));

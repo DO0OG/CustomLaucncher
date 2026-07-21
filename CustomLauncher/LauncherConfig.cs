@@ -14,6 +14,10 @@ public static class LauncherConfig
     public const string ServerName = "DOG'S SERVER";
 
     public const string ServerIp = "play.example.com";
+
+    /// <summary>멀티플레이 목록에 등록할 주소. 기본 포트는 마인크래프트 관례대로 생략한다.</summary>
+    public static string ServerAddress =>
+        ServerPort == 25565 ? ServerIp : $"{ServerIp}:{ServerPort}";
     public const int ServerPort = 25565;
     public const string ManifestUrl = "https://example.com/distribution.json";
     public const string ServerStatusApiUrl = "https://api.mcsrvstat.us/3/" + ServerIp;

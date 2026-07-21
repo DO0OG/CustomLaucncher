@@ -95,7 +95,9 @@ public sealed class LauncherService : ILauncherService
         _javaProvisioner = new JavaProvisioningService(new AppPaths().RuntimeDir);
         _preparer = new GameSessionPreparer(content, modLoader, new CmlGameRuntime(_launcher),
             new ConsentAwareJavaProvisioner(_javaProvisioner, () => _activeSettings?.Java.AutoInstallEnabled == true),
-            () => _activeSettings?.DisabledOptionalModuleIds ?? []);
+            () => _activeSettings?.DisabledOptionalModuleIds ?? [],
+            new ServerListWriter(),
+            path);
     }
 
     private LauncherSettings? _activeSettings;

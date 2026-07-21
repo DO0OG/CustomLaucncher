@@ -1,0 +1,35 @@
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using CustomLauncher.ViewModels;
+
+namespace CustomLauncher.Views;
+
+public partial class MainWindow : Window
+{
+    public MainWindow()
+    {
+        InitializeComponent();
+        DataContextChanged += (_, _) =>
+        {
+            if (DataContext is MainViewModel vm) vm.SettingsRequested += ShowSettings;
+        };
+        Activated += (_, _) => { if (DataContext is MainViewModel vm) vm.WindowActive = true; };
+        Deactivated += (_, _) => { if (DataContext is MainViewModel vm) vm.WindowActive = false; };
+    }
+
+    private void TitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) BeginMoveDrag(e);
+    }
+
+    private void CloseClicked(object? sender, RoutedEventArgs e) => Close();
+
+    private async void ShowSettings(object? sender, EventArgs e)
+    {
+        if (DataContext is not MainViewModel vm) return;
+        var window = new SettingsWindow(vm.Settings);
+        await window.ShowDialog(this);
+        await vm.SaveSettingsAsync();
+    }
+}

@@ -1,0 +1,11 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="CustomLauncher.App"
+             RequestedThemeVariant="Dark">
+  <Application.Styles>
+    <FluentTheme />
+    <Style Selector="Control">
+      <Setter Property="TextElement.FontFamily" Value="avares://CustomLauncher/Assets/Fonts/DNFBitBitv2.ttf#DNF Bit Bit v2" />
+    </Style>
+  </Application.Styles>
+</Application>

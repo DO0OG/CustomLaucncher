@@ -1,16 +1,19 @@
-using System;
-using System.Windows.Forms;
+using Avalonia;
+using Velopack;
 
-namespace CustomLauncher
+namespace CustomLauncher;
+
+internal static class Program
 {
-    static class Program
+    [STAThread]
+    public static void Main(string[] args)
     {
-        [STAThread]
-        static void Main()
-        {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm());
-        }
+        VelopackApp.Build().Run();
+        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
+
+    public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure<App>()
+        .UsePlatformDetect()
+        .WithInterFont()
+        .LogToTrace();
 }

@@ -1,0 +1,36 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="CustomLauncher.Views.MainWindow"
+        Width="960" Height="600" MinWidth="760" MinHeight="480"
+        Title="CustomLauncher 2.0" ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaTitleBarHeightHint="42">
+  <Grid RowDefinitions="42,*,Auto" Background="#141820">
+    <Border Grid.Row="0" Background="#232936" PointerPressed="TitleBarPointerPressed">
+      <Grid ColumnDefinitions="*,Auto,Auto" Margin="16,0,8,0">
+        <TextBlock VerticalAlignment="Center" FontSize="17" Text="CUSTOM LAUNCHER" />
+        <Button Grid.Column="1" Content="설정" Command="{Binding OpenSettingsCommand}" Margin="4" />
+        <Button Grid.Column="2" Content="×" Click="CloseClicked" Margin="4" />
+      </Grid>
+    </Border>
+    <Grid Grid.Row="1" ColumnDefinitions="1.2*,1*" Margin="32">
+      <StackPanel VerticalAlignment="Center" Spacing="14">
+        <Image Source="avares://CustomLauncher/Assets/Images/logo.png" Height="120" Stretch="Uniform" />
+        <TextBlock Text="{Binding Account}" HorizontalAlignment="Center" FontSize="20" />
+        <TextBlock Text="{Binding Status}" HorizontalAlignment="Center" TextWrapping="Wrap" />
+        <ProgressBar Minimum="0" Maximum="100" Value="{Binding Progress}" Height="8" />
+      </StackPanel>
+      <Border Grid.Column="1" Background="#252B38" CornerRadius="14" Padding="28" Margin="30,20,0,20">
+        <StackPanel VerticalAlignment="Center" Spacing="14">
+          <TextBlock Text="서버" FontSize="25" />
+          <TextBlock Text="play.example.com" Opacity="0.7" />
+          <TextBlock Text="{Binding ServerStatus}" Foreground="#71D99E" />
+          <TextBlock Text="{Binding ServerMotd}" TextWrapping="Wrap" Opacity="0.75" MaxHeight="90" />
+          <Button Content="Microsoft 로그인" Command="{Binding LoginCommand}" Height="44" />
+          <Button Content="게임 시작" Command="{Binding LaunchCommand}" Height="58" FontSize="20" />
+          <Button Content="취소" Command="{Binding CancelCommand}" Height="38" />
+        </StackPanel>
+      </Border>
+    </Grid>
+    <TextBlock Grid.Row="2" Text="Windows · macOS · Linux" HorizontalAlignment="Center" Margin="8" Opacity="0.55" />
+  </Grid>
+</Window>

@@ -1,0 +1,24 @@
+name: Cross-platform CI
+
+on:
+  workflow_call:
+  push:
+    branches: [main, "11-feat-**"]
+  pull_request:
+
+jobs:
+  build-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet restore CustomLauncher/CustomLauncher.sln
+      - run: dotnet build CustomLauncher/CustomLauncher.sln --configuration Release --no-restore
+      - run: dotnet test CustomLauncher/CustomLauncher.sln --configuration Release --no-build
+      - run: dotnet format CustomLauncher/CustomLauncher.sln --verify-no-changes --no-restore

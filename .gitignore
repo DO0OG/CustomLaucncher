@@ -400,3 +400,7 @@ FodyWeavers.xsd
 *.sln.iml
 
 results.sarif
+
+# Local agent/runtime state
+.claude/
+.omx/

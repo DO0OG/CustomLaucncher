@@ -2,8 +2,8 @@ using System.Diagnostics;
 using CmlLib.Core;
 using CmlLib.Core.Auth;
 using CmlLib.Core.ProcessBuilder;
-using CustomLauncher.Models;
 using CustomLauncher.Core.Java;
+using CustomLauncher.Models;
 
 namespace CustomLauncher.Core;
 

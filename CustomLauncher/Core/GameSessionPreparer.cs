@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using CmlLib.Core.ProcessBuilder;
-using CustomLauncher.Shared.Models;
 using CustomLauncher.Core.Java;
+using CustomLauncher.Shared.Models;
 
 namespace CustomLauncher.Core;
 

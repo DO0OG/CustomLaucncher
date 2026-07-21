@@ -1,5 +1,5 @@
-using CustomLauncher.Models;
 using CustomLauncher.Core;
+using CustomLauncher.Models;
 
 namespace CustomLauncher.ViewModels;
 

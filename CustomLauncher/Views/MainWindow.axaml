@@ -7,7 +7,7 @@
   <Grid RowDefinitions="42,*,Auto" Background="#141820">
     <Border Grid.Row="0" Background="#232936" PointerPressed="TitleBarPointerPressed">
       <Grid ColumnDefinitions="*,Auto,Auto" Margin="16,0,8,0">
-        <TextBlock VerticalAlignment="Center" FontSize="17" Text="CUSTOM LAUNCHER" />
+        <TextBlock VerticalAlignment="Center" FontSize="17" Text="{Binding AppDisplayName}" />
         <Button Grid.Column="1" Content="설정" Command="{Binding OpenSettingsCommand}" Margin="4" />
         <Button Grid.Column="2" Content="×" Click="CloseClicked" Margin="4" />
       </Grid>
@@ -22,7 +22,7 @@
       <Border Grid.Column="1" Background="#252B38" CornerRadius="14" Padding="28" Margin="30,20,0,20">
         <StackPanel VerticalAlignment="Center" Spacing="14">
           <TextBlock Text="서버" FontSize="25" />
-          <TextBlock Text="play.example.com" Opacity="0.7" />
+          <TextBlock Text="{Binding ServerEndpoint}" Opacity="0.7" />
           <TextBlock Text="{Binding ServerStatus}" Foreground="#71D99E" />
           <TextBlock Text="{Binding ServerMotd}" TextWrapping="Wrap" Opacity="0.75" MaxHeight="90" />
           <Button Content="Microsoft 로그인" Command="{Binding LoginCommand}" Height="44" />

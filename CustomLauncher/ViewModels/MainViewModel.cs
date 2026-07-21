@@ -64,6 +64,8 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     public ICommand CancelCommand { get; }
     public ICommand OpenSettingsCommand { get; }
     public AppPaths Paths => _paths;
+    public string AppDisplayName => LauncherConfig.GameLauncherName;
+    public string ServerEndpoint => $"{LauncherConfig.ServerIp}:{LauncherConfig.ServerPort}";
     public LauncherSettings Settings => _settings;
     public bool WindowActive { get => _windowActive; set => SetProperty(ref _windowActive, value); }
     public string ServerStatus { get => _serverStatus; private set => SetProperty(ref _serverStatus, value); }

@@ -10,10 +10,23 @@ public static class GenerateCommand
     {
         var options = GenerateOptions.Parse(args);
         var distribution = await GenerateAsync(options, cancellationToken);
+        var outputPath = await SaveAsync(distribution, options.OutputPath, cancellationToken);
+        Console.WriteLine($"Generated {distribution.Modules.Count} module(s): {outputPath}");
+        return 0;
+    }
 
-        var outputPath = Path.GetFullPath(options.OutputPath);
-        Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
-        var temporaryPath = outputPath + ".tmp";
+    /// <summary>
+    /// Writes the manifest atomically and returns the full path it landed at. Shared by the command
+    /// line and the window so both produce byte-identical output.
+    /// </summary>
+    public static async Task<string> SaveAsync(
+        ServerDistribution distribution,
+        string outputPath,
+        CancellationToken cancellationToken = default)
+    {
+        var fullPath = Path.GetFullPath(outputPath);
+        Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+        var temporaryPath = fullPath + ".tmp";
 
         await using (var stream = new FileStream(
                          temporaryPath,
@@ -27,9 +40,23 @@ public static class GenerateCommand
             await stream.FlushAsync(cancellationToken);
         }
 
-        File.Move(temporaryPath, outputPath, overwrite: true);
-        Console.WriteLine($"Generated {distribution.Modules.Count} module(s): {outputPath}");
-        return 0;
+        File.Move(temporaryPath, fullPath, overwrite: true);
+        return fullPath;
+    }
+
+    /// <summary>Reads a manifest written by <see cref="SaveAsync"/>, for diffing before a rewrite.</summary>
+    public static async Task<ServerDistribution?> TryReadAsync(string path, CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(path)) return null;
+        try
+        {
+            await using var stream = File.OpenRead(path);
+            return await JsonSerializer.DeserializeAsync<ServerDistribution>(stream, ManifestJson.Options, cancellationToken);
+        }
+        catch (Exception exception) when (exception is IOException or JsonException)
+        {
+            return null;
+        }
     }
 
     public static async Task<ServerDistribution> GenerateAsync(

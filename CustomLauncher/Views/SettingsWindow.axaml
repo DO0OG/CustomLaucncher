@@ -2,35 +2,57 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:CustomLauncher.Views"
         x:Class="CustomLauncher.Views.SettingsWindow"
-        Width="760" Height="560" MinWidth="620" MinHeight="460"
-        Title="런처 설정">
-  <Grid RowDefinitions="*,Auto" Margin="18">
-    <TabControl>
+        Width="820" Height="620" MinWidth="700" MinHeight="540"
+        Background="{StaticResource WindowBrush}"
+        WindowStartupLocation="CenterOwner"
+        Title="설정">
+  <Grid RowDefinitions="*,Auto">
+    <TabControl Grid.Row="0" Margin="16,12,16,0">
       <TabItem Header="일반">
-        <StackPanel Margin="20" Spacing="12">
-          <TextBlock Text="게임 설치 경로" />
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBox Text="{Binding InstallPath}" />
-            <Button Grid.Column="1" Content="찾아보기" Click="BrowseFolderClicked" Margin="8,0,0,0" />
-          </Grid>
-          <TextBlock Text="화면 크기" />
-          <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-            <NumericUpDown Value="{Binding ResolutionWidth}" Minimum="640" Maximum="7680" />
-            <NumericUpDown Grid.Column="1" Value="{Binding ResolutionHeight}" Minimum="480" Maximum="4320" />
-          </Grid>
-          <CheckBox IsChecked="{Binding DiscordRpcEnabled}" Content="Discord 활동 상태 사용" />
-          <TextBlock Text="{Binding ValidationMessage}" Foreground="#E85D75" />
-        </StackPanel>
+        <ScrollViewer>
+          <StackPanel Margin="4,18" Spacing="18" MaxWidth="560" HorizontalAlignment="Left">
+            <StackPanel Spacing="8">
+              <TextBlock Text="게임 설치 경로" Classes="h2" />
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBox Text="{Binding InstallPath}" />
+                <Button Grid.Column="1" Content="찾아보기" Click="BrowseFolderClicked" Margin="8,0,0,0" />
+              </Grid>
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+              <TextBlock Text="게임 화면 크기" Classes="h2" />
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <NumericUpDown Width="150" Value="{Binding ResolutionWidth}" Minimum="640" Maximum="7680" Increment="10" />
+                <TextBlock Text="×" VerticalAlignment="Center" Classes="muted" />
+                <NumericUpDown Width="150" Value="{Binding ResolutionHeight}" Minimum="480" Maximum="4320" Increment="10" />
+              </StackPanel>
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+              <TextBlock Text="연동" Classes="h2" />
+              <CheckBox IsChecked="{Binding DiscordRpcEnabled}" Content="Discord에 플레이 상태 표시" />
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
       </TabItem>
+
       <TabItem Header="Java"><views:JavaSettingsTab /></TabItem>
       <TabItem Header="모드"><views:ModManagementTab /></TabItem>
       <TabItem Header="셰이더"><views:ShaderPackTab /></TabItem>
       <TabItem Header="리소스팩"><views:ResourcePackTab /></TabItem>
     </TabControl>
-    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
-      <Button Content="정보" Click="AboutClicked" />
-      <Button Content="취소" Click="CancelClicked" />
-      <Button Content="저장" IsDefault="True" Click="SaveClicked" />
-    </StackPanel>
+
+    <Border Grid.Row="1" Background="{StaticResource SurfaceBrush}"
+            BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Padding="20,14">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <Button Grid.Column="0" Content="정보" Click="AboutClicked" />
+        <TextBlock Grid.Column="1" Text="{Binding ValidationMessage}" Foreground="{StaticResource WarningBrush}"
+                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="16,0" />
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
+          <Button Content="취소" Click="CancelClicked" />
+          <Button Classes="accent" MinWidth="120" Height="34" Content="저장" IsDefault="True" Click="SaveClicked" />
+        </StackPanel>
+      </Grid>
+    </Border>
   </Grid>
 </Window>

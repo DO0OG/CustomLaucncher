@@ -13,20 +13,20 @@ public partial class SettingsWindow : Window
     {
         DataContext = viewModel;
         // The view owns the file dialogs; the view models only ask for a path.
-        viewModel.Java.FilePicker = () => PickFileAsync("Java 실행 파일 선택", null);
+        viewModel.Java.FilePicker = () => PickFileAsync("Java 실행 파일 선택", null, null);
         if (viewModel.Modules is not null)
-            viewModel.Modules.FilePicker = () => PickFileAsync("모드 jar 선택", ["*.jar"]);
+            viewModel.Modules.FilePicker = () => PickFileAsync("추가할 모드 선택", "모드 파일 (.jar)", ["*.jar"]);
         if (viewModel.Shaders is not null)
-            viewModel.Shaders.FilePicker = () => PickFileAsync("셰이더팩 zip 선택", ["*.zip"]);
+            viewModel.Shaders.FilePicker = () => PickFileAsync("추가할 셰이더팩 선택", "셰이더팩 (.zip)", ["*.zip"]);
         if (viewModel.ResourcePacks is not null)
-            viewModel.ResourcePacks.FilePicker = () => PickFileAsync("리소스팩 zip 선택", ["*.zip"]);
+            viewModel.ResourcePacks.FilePicker = () => PickFileAsync("추가할 리소스팩 선택", "리소스팩 (.zip)", ["*.zip"]);
     }
 
-    private async Task<string?> PickFileAsync(string title, string[]? patterns)
+    private async Task<string?> PickFileAsync(string title, string? filterName, string[]? patterns)
     {
         var options = new FilePickerOpenOptions { Title = title, AllowMultiple = false };
         if (patterns is not null)
-            options.FileTypeFilter = [new FilePickerFileType(title) { Patterns = patterns }];
+            options.FileTypeFilter = [new FilePickerFileType(filterName ?? title) { Patterns = patterns }];
         var files = await StorageProvider.OpenFilePickerAsync(options);
         return files.Count > 0 ? files[0].Path.LocalPath : null;
     }

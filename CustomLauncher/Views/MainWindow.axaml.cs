@@ -26,6 +26,8 @@ public partial class MainWindow : Window
 
     private void CloseClicked(object? sender, RoutedEventArgs e) => Close();
 
+    private void MinimizeClicked(object? sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+
     private async void CopyDeviceCodeClicked(object? sender, RoutedEventArgs e)
     {
         if (DataContext is MainViewModel vm && Clipboard is not null)

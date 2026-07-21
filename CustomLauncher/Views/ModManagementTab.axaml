@@ -1,51 +1,71 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="CustomLauncher.Views.ModManagementTab">
-  <Grid Margin="16" RowDefinitions="Auto,*,Auto,Auto,Auto" DataContext="{Binding Modules}">
-    <TextBlock Grid.Row="0" Text="모드 관리" FontSize="20" Margin="0,0,0,8" />
+  <Grid Margin="4,16" RowDefinitions="*,Auto,Auto" DataContext="{Binding Modules}">
 
-    <Grid Grid.Row="1" ColumnDefinitions="*,8,*">
+    <Grid Grid.Row="0" ColumnDefinitions="*,16,*">
       <DockPanel Grid.Column="0">
-        <TextBlock DockPanel.Dock="Top" Text="서버 배포 모듈" Opacity="0.7" Margin="0,0,0,4" />
-        <ListBox ItemsSource="{Binding Modules}">
-          <ListBox.ItemTemplate>
-            <DataTemplate>
-              <Grid ColumnDefinitions="Auto,*,Auto" IsEnabled="{Binding IsEffectivelyEnabled}">
-                <CheckBox Grid.Column="0" IsChecked="{Binding IsEnabled}"
-                          IsVisible="{Binding IsOptional}" Margin="0,0,6,0" />
-                <TextBlock Grid.Column="1" Text="{Binding DisplayName}" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="2" Text="{Binding TypeLabel}" Opacity="0.6" VerticalAlignment="Center" />
-              </Grid>
-            </DataTemplate>
-          </ListBox.ItemTemplate>
-        </ListBox>
+        <TextBlock DockPanel.Dock="Top" Text="서버 배포 모듈" Classes="h2" Margin="0,0,0,6" />
+        <TextBlock DockPanel.Dock="Top" Classes="muted" Margin="0,0,0,8" TextWrapping="Wrap"
+                   Text="선택형 모듈은 체크로 켜고 끕니다. 상위를 끄면 하위도 함께 꺼집니다." />
+        <Panel>
+          <ListBox ItemsSource="{Binding Modules}">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Grid ColumnDefinitions="Auto,*,Auto" IsEnabled="{Binding IsEffectivelyEnabled}" Height="26">
+                  <CheckBox Grid.Column="0" IsChecked="{Binding IsEnabled}"
+                            IsVisible="{Binding IsOptional}" Margin="0,0,4,0" />
+                  <TextBlock Grid.Column="1" Text="{Binding DisplayName}" VerticalAlignment="Center"
+                             TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="2" Text="{Binding TypeLabel}" Classes="muted" VerticalAlignment="Center" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <TextBlock Classes="muted" IsVisible="{Binding ModulesEmpty}" IsHitTestVisible="False"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                     Text="'목록 새로 고침'을 눌러&#10;서버 매니페스트를 불러오세요." />
+        </Panel>
       </DockPanel>
 
       <DockPanel Grid.Column="2">
-        <TextBlock DockPanel.Dock="Top" Text="드롭인 모드 (직접 추가한 jar)" Opacity="0.7" Margin="0,0,0,4" />
-        <ListBox ItemsSource="{Binding DropIns}" SelectedItem="{Binding SelectedDropIn}">
-          <ListBox.ItemTemplate>
-            <DataTemplate>
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <TextBlock Text="{Binding FileName}" />
-                <TextBlock Text="서버" Opacity="0.6" IsVisible="{Binding IsServerManaged}" />
-              </StackPanel>
-            </DataTemplate>
-          </ListBox.ItemTemplate>
-        </ListBox>
+        <TextBlock DockPanel.Dock="Top" Text="드롭인 모드" Classes="h2" Margin="0,0,0,6" />
+        <TextBlock DockPanel.Dock="Top" Classes="muted" Margin="0,0,0,8" TextWrapping="Wrap"
+                   Text="직접 넣은 모드 파일(.jar)입니다. 업데이트해도 삭제되지 않습니다." />
+        <Panel>
+          <ListBox ItemsSource="{Binding DropIns}" SelectedItem="{Binding SelectedDropIn}">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Grid ColumnDefinitions="*,Auto" Height="26">
+                  <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"
+                             TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="1" Text="서버" Classes="muted" VerticalAlignment="Center"
+                             IsVisible="{Binding IsServerManaged}" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <TextBlock Classes="muted" IsVisible="{Binding DropInsEmpty}" IsHitTestVisible="False"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                     Text="추가한 모드가 없습니다." />
+        </Panel>
       </DockPanel>
     </Grid>
 
-    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,10,0,0">
-      <Button Content="목록 새로 고침" Command="{Binding RefreshCommand}" />
-      <Button Content="업데이트 적용" Command="{Binding UpdateCommand}" />
-      <Button Content="jar 추가" Command="{Binding AddDropInCommand}" />
-      <Button Content="선택 삭제" Command="{Binding DeleteDropInCommand}" />
-      <Button Content="취소" Command="{Binding CancelCommand}" />
-    </StackPanel>
+    <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="0,12,0,0">
+      <Button Grid.Column="0" Content="중지" Command="{Binding CancelCommand}" IsVisible="{Binding Busy}" />
+      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+        <Button Content="모드 추가" Command="{Binding AddDropInCommand}" />
+        <Button Content="선택 삭제" Command="{Binding DeleteDropInCommand}" />
+        <Button Content="목록 새로 고침" Command="{Binding RefreshCommand}" />
+        <Button Classes="accent" Height="34" MinWidth="130" Content="업데이트 적용" Command="{Binding UpdateCommand}" />
+      </StackPanel>
+    </Grid>
 
-    <ProgressBar Grid.Row="3" Margin="0,10,0,0" Height="6" IsIndeterminate="True"
-                 IsVisible="{Binding Busy}" />
-    <TextBlock Grid.Row="4" Text="{Binding Message}" TextWrapping="Wrap" Margin="0,8,0,0" Opacity="0.85" />
+    <StackPanel Grid.Row="2" Margin="0,10,0,0" Spacing="6">
+      <ProgressBar Height="3" IsIndeterminate="True" IsVisible="{Binding Busy}"
+                   Background="Transparent" Foreground="{StaticResource AccentBrush}" />
+      <TextBlock Text="{Binding Message}" Classes="muted" TextWrapping="Wrap" MinHeight="16" />
+    </StackPanel>
   </Grid>
 </UserControl>

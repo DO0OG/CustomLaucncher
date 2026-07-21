@@ -2,7 +2,129 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="CustomLauncher.App"
              RequestedThemeVariant="Dark">
+  <Application.Resources>
+    <!-- One palette for every window, so nothing has to invent its own colours. -->
+    <Color x:Key="SurfaceColor">#171A21</Color>
+    <SolidColorBrush x:Key="WindowBrush" Color="#12151B" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#1A1E26" />
+    <SolidColorBrush x:Key="RaisedBrush" Color="#232833" />
+    <SolidColorBrush x:Key="RaisedHoverBrush" Color="#2C323F" />
+    <SolidColorBrush x:Key="BorderBrush" Color="#2E3440" />
+    <SolidColorBrush x:Key="TextBrush" Color="#E7E9ED" />
+    <SolidColorBrush x:Key="MutedBrush" Color="#98A0AE" />
+    <SolidColorBrush x:Key="AccentBrush" Color="#3D7DFF" />
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="#5691FF" />
+    <SolidColorBrush x:Key="OnlineBrush" Color="#5BC98D" />
+    <SolidColorBrush x:Key="OfflineBrush" Color="#7A828F" />
+    <SolidColorBrush x:Key="WarningBrush" Color="#E0A458" />
+  </Application.Resources>
+
   <Application.Styles>
     <FluentTheme />
+
+    <!-- Buttons share one height and minimum width so rows line up instead of
+         growing to fit whatever text they happen to contain. -->
+    <Style Selector="Button">
+      <Setter Property="Height" Value="34" />
+      <Setter Property="MinWidth" Value="104" />
+      <Setter Property="Padding" Value="16,0" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Background" Value="{StaticResource RaisedBrush}" />
+      <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource RaisedHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+      <Setter Property="TextElement.Foreground" Value="{StaticResource TextBrush}" />
+    </Style>
+    <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Opacity" Value="0.4" />
+    </Style>
+
+    <!-- The single most important action on a screen. -->
+    <Style Selector="Button.accent">
+      <Setter Property="Height" Value="42" />
+      <Setter Property="MinWidth" Value="168" />
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource AccentHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource AccentHoverBrush}" />
+      <Setter Property="TextElement.Foreground" Value="White" />
+    </Style>
+
+    <!-- Title-bar icons: square, borderless, no minimum width. -->
+    <Style Selector="Button.chrome">
+      <Setter Property="Height" Value="32" />
+      <Setter Property="Width" Value="40" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+    </Style>
+    <Style Selector="Button.chrome:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource RaisedBrush}" />
+      <Setter Property="TextElement.Foreground" Value="{StaticResource TextBrush}" />
+    </Style>
+    <Style Selector="Button.chrome.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#C4453F" />
+      <Setter Property="TextElement.Foreground" Value="White" />
+    </Style>
+
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="18" />
+    </Style>
+
+    <Style Selector="TextBlock.h1">
+      <Setter Property="FontSize" Value="20" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+    </Style>
+    <Style Selector="TextBlock.h2">
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+    </Style>
+    <Style Selector="TextBlock.muted">
+      <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+      <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="TextBlock.mono">
+      <Setter Property="FontFamily" Value="Consolas, Menlo, monospace" />
+    </Style>
+
+    <Style Selector="ListBox">
+      <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="4" />
+    </Style>
+
+    <Style Selector="TabItem">
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="MinHeight" Value="40" />
+      <Setter Property="Padding" Value="14,0" />
+    </Style>
+
+    <Style Selector="TextBox">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="CornerRadius" Value="6" />
+    </Style>
+    <Style Selector="NumericUpDown">
+      <Setter Property="MinHeight" Value="34" />
+    </Style>
   </Application.Styles>
 </Application>

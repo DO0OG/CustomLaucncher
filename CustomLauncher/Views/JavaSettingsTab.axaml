@@ -1,45 +1,61 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="CustomLauncher.Views.JavaSettingsTab">
-  <ScrollViewer>
-    <StackPanel Margin="16" Spacing="10" DataContext="{Binding Java}">
-      <TextBlock Text="Java 실행 파일" />
-      <Grid ColumnDefinitions="*,Auto">
-        <TextBox Text="{Binding ExecutablePath}" Watermark="비워두면 실행 시 자동으로 검색합니다" />
-        <Button Grid.Column="1" Content="찾아보기" Command="{Binding BrowseCommand}" Margin="8,0,0,0" />
-      </Grid>
-      <StackPanel Orientation="Horizontal" Spacing="8">
-        <Button Content="자동 검색" Command="{Binding DetectCommand}" />
-        <Button Content="버전 확인" Command="{Binding ValidateCommand}" />
-        <Button Content="자동 설치" Command="{Binding InstallCommand}" />
-        <TextBlock Text="감지된 버전:" VerticalAlignment="Center" Opacity="0.7" />
-        <TextBlock Text="{Binding DetectedVersion}" VerticalAlignment="Center" />
+  <Grid RowDefinitions="*,Auto" DataContext="{Binding Java}">
+    <ScrollViewer Grid.Row="0">
+      <StackPanel Margin="4,16" Spacing="18" MaxWidth="560" HorizontalAlignment="Left">
+
+        <StackPanel Spacing="8">
+          <TextBlock Text="Java 실행 파일" Classes="h2" />
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBox Text="{Binding ExecutablePath}" Watermark="비워두면 게임 실행 시 자동으로 찾습니다" />
+            <Button Grid.Column="1" Content="찾아보기" Command="{Binding BrowseCommand}" Margin="8,0,0,0" />
+          </Grid>
+          <!-- WrapPanel so the row folds instead of clipping on a narrow window. -->
+          <WrapPanel Orientation="Horizontal">
+            <Button Content="자동 검색" Command="{Binding DetectCommand}" Margin="0,0,8,8" />
+            <Button Content="버전 확인" Command="{Binding ValidateCommand}" Margin="0,0,8,8" />
+            <Button Content="자동 설치" Command="{Binding InstallCommand}" Margin="0,0,8,8" />
+          </WrapPanel>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="감지된 버전" Classes="muted" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding DetectedVersion}" VerticalAlignment="Center" FontSize="13"
+                       TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+          <CheckBox IsChecked="{Binding AutoInstallEnabled}"
+                    Content="필요하면 게임 실행 시 Java를 자동으로 설치" />
+        </StackPanel>
+
+        <StackPanel Spacing="8">
+          <TextBlock Text="메모리 할당" Classes="h2" />
+          <TextBlock Text="{Binding RamAdviceText}" Classes="muted" TextWrapping="Wrap" />
+          <Grid ColumnDefinitions="60,150,60,150,Auto" ColumnSpacing="10">
+            <TextBlock Grid.Column="0" Text="최소" VerticalAlignment="Center" Classes="muted" />
+            <NumericUpDown Grid.Column="1" Value="{Binding MinRamMb}" Increment="256"
+                           Minimum="{Binding RamMinimumBound}" Maximum="{Binding RamMaximumBound}" />
+            <TextBlock Grid.Column="2" Text="최대" VerticalAlignment="Center" Classes="muted"
+                       HorizontalAlignment="Right" Margin="0,0,4,0" />
+            <NumericUpDown Grid.Column="3" Value="{Binding MaxRamMb}" Increment="256"
+                           Minimum="{Binding RamMinimumBound}" Maximum="{Binding RamMaximumBound}" />
+            <Button Grid.Column="4" Content="권장값" Command="{Binding UseRecommendedRamCommand}" />
+          </Grid>
+        </StackPanel>
+
+        <StackPanel Spacing="8">
+          <TextBlock Text="JVM 인자" Classes="h2" />
+          <TextBlock Text="한 줄에 하나씩 입력합니다." Classes="muted" TextWrapping="Wrap" />
+          <TextBox Text="{Binding JvmArgumentsText}" AcceptsReturn="True" Height="150"
+                   FontFamily="Consolas, Menlo, monospace" />
+          <TextBlock Text="{Binding ArgumentWarning}" Foreground="{StaticResource WarningBrush}"
+                     TextWrapping="Wrap" FontSize="12" IsVisible="{Binding HasArgumentWarning}" />
+        </StackPanel>
       </StackPanel>
+    </ScrollViewer>
 
-      <CheckBox IsChecked="{Binding AutoInstallEnabled}" Content="게임 실행 시 필요한 Java 런타임 자동 설치 허용" />
-
-      <TextBlock Text="메모리" FontSize="16" Margin="0,8,0,0" />
-      <TextBlock Text="{Binding RamAdviceText}" Opacity="0.65" TextWrapping="Wrap" />
-      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
-        <TextBlock Text="최소 (MB)" VerticalAlignment="Center" />
-        <NumericUpDown Grid.Column="1" Value="{Binding MinRamMb}" Increment="256"
-                       Minimum="{Binding RamMinimumBound}" Maximum="{Binding RamMaximumBound}" />
-        <Button Grid.Column="2" Content="권장값 적용" Command="{Binding UseRecommendedRamCommand}" />
-      </Grid>
-      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-        <TextBlock Text="최대 (MB)" VerticalAlignment="Center" />
-        <NumericUpDown Grid.Column="1" Value="{Binding MaxRamMb}" Increment="256"
-                       Minimum="{Binding RamMinimumBound}" Maximum="{Binding RamMaximumBound}" />
-      </Grid>
-
-      <TextBlock Text="JVM 인자" FontSize="16" Margin="0,8,0,0" />
-      <TextBox Text="{Binding JvmArgumentsText}" AcceptsReturn="True" Height="120"
-               Watermark="한 줄에 인자 하나" />
-      <TextBlock Text="{Binding ArgumentWarning}" Foreground="#E8A15D" TextWrapping="Wrap"
-                 IsVisible="{Binding HasArgumentWarning}" />
-
-      <ProgressBar Height="6" Value="{Binding Progress}" Maximum="100" IsVisible="{Binding Busy}" />
-      <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Opacity="0.85" />
+    <StackPanel Grid.Row="1" Margin="4,10,4,0" Spacing="6">
+      <ProgressBar Height="3" Value="{Binding Progress}" Maximum="100" IsVisible="{Binding Busy}"
+                   Background="Transparent" Foreground="{StaticResource AccentBrush}" />
+      <TextBlock Text="{Binding Message}" Classes="muted" TextWrapping="Wrap" MinHeight="16" />
     </StackPanel>
-  </ScrollViewer>
+  </Grid>
 </UserControl>

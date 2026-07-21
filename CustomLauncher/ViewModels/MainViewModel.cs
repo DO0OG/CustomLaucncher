@@ -29,6 +29,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     private double _progress;
     private bool _busy;
     private bool _windowActive = true;
+    private bool _serverOnline;
     private string _serverStatus = "서버 확인 중...";
     private string _serverMotd = string.Empty;
 
@@ -72,6 +73,15 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     public string ServerMotd { get => _serverMotd; private set => SetProperty(ref _serverMotd, value); }
     public string DeviceCode { get; private set; } = string.Empty;
     public string DeviceCodeUrl { get; private set; } = string.Empty;
+
+    /// <summary>The device-code panel only belongs on screen while a code is pending.</summary>
+    public bool HasDeviceCode => !string.IsNullOrEmpty(DeviceCode);
+
+    /// <summary>Swaps the primary action between "sign in" and "play".</summary>
+    public bool IsAuthenticated => _session is not null;
+    public bool IsSignedOut => _session is null;
+    public bool ServerOnline { get => _serverOnline; private set => SetProperty(ref _serverOnline, value); }
+
     public string Status { get => _status; private set => SetProperty(ref _status, value); }
     public string Account { get => _account; private set => SetProperty(ref _account, value); }
     public double Progress { get => _progress; private set => SetProperty(ref _progress, value); }
@@ -110,7 +120,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         finally
         {
             _statusPolling.Start();
-            NotifyCommandStates();
+            NotifyAuthState();
         }
     }
 
@@ -134,8 +144,8 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         try
         {
             _session = await _auth.AuthenticateAsync(operation.Token);
-            Account = _session?.Username ?? "로그인 실패";
-            Status = _session is null ? "로그인하지 못했습니다." : "로그인했습니다.";
+            Account = _session?.Username ?? "로그인하지 않음";
+            Status = _session is null ? "로그인하지 못했습니다." : "게임을 시작할 수 있습니다.";
             if (_session is not null) _discord?.SetState(DiscordPresenceState.Ready);
         }
         catch (OperationCanceledException) when (operation.IsCancellationRequested)
@@ -149,6 +159,9 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         }
         finally
         {
+            // The code is single-use; leaving it on screen after the attempt is noise.
+            SetDeviceCode(string.Empty, string.Empty);
+            NotifyAuthState();
             EndOperation(operation);
             Busy = false;
         }
@@ -243,9 +256,10 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
 
     private void OnServerStatusChanged(object? sender, ServerStatusInfo status) => Dispatcher.UIThread.Post(() =>
     {
+        ServerOnline = status.RequestSucceeded && status.IsOnline;
         ServerStatus = status.RequestSucceeded
-            ? status.IsOnline ? $"온라인 · {status.OnlinePlayers ?? 0}/{status.MaxPlayers ?? 0}" : "오프라인"
-            : "서버 상태를 확인할 수 없음";
+            ? status.IsOnline ? $"온라인 · {status.OnlinePlayers ?? 0}/{status.MaxPlayers ?? 0}명" : "오프라인"
+            : "상태 확인 불가";
         ServerMotd = status.Motd;
     });
 
@@ -258,12 +272,25 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
 
     private void OnDeviceCodeReceived(object? sender, DeviceCodeInfo info) => Dispatcher.UIThread.Post(() =>
     {
-        DeviceCode = info.UserCode;
-        DeviceCodeUrl = info.VerificationUrl;
+        SetDeviceCode(info.UserCode, info.VerificationUrl);
+        Status = "브라우저에서 코드를 입력해 로그인을 완료해 주세요.";
+    });
+
+    private void SetDeviceCode(string code, string url)
+    {
+        DeviceCode = code;
+        DeviceCodeUrl = url;
         RaisePropertyChanged(nameof(DeviceCode));
         RaisePropertyChanged(nameof(DeviceCodeUrl));
-        Status = info.Message;
-    });
+        RaisePropertyChanged(nameof(HasDeviceCode));
+    }
+
+    private void NotifyAuthState()
+    {
+        RaisePropertyChanged(nameof(IsAuthenticated));
+        RaisePropertyChanged(nameof(IsSignedOut));
+        NotifyCommandStates();
+    }
 
     public async ValueTask DisposeAsync()
     {

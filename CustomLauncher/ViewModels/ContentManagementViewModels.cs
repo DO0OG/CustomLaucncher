@@ -155,6 +155,10 @@ public sealed class ModuleManagementViewModel : ContentTabViewModel
 
     public ObservableCollection<ModuleListItem> Modules { get; } = [];
     public ObservableCollection<DropInModItem> DropIns { get; } = [];
+
+    // Empty-state placeholders: an empty box with no explanation reads as a broken screen.
+    public bool ModulesEmpty => Modules.Count == 0;
+    public bool DropInsEmpty => DropIns.Count == 0;
     public AsyncCommand RefreshCommand { get; }
     public AsyncCommand UpdateCommand { get; }
     public AsyncCommand AddDropInCommand { get; }
@@ -232,6 +236,7 @@ public sealed class ModuleManagementViewModel : ContentTabViewModel
         foreach (var file in scanned)
             DropIns.Add(new DropInModItem(file.FileName, file.IsServerManaged || serverOwned.Contains(file.FileName)));
         SelectedDropIn = DropIns.FirstOrDefault(item => item.FileName == selectedName);
+        RaisePropertyChanged(nameof(DropInsEmpty));
     }
 
     private HashSet<string> ServerOwnedModFileNames()
@@ -275,6 +280,7 @@ public sealed class ModuleManagementViewModel : ContentTabViewModel
 
         AddChildren(string.Empty, 0);
         RecalculateEffectiveState();
+        RaisePropertyChanged(nameof(ModulesEmpty));
     }
 
     private async void OnModuleEnabledChanged(object? sender, EventArgs e)
@@ -343,6 +349,7 @@ public sealed class ShaderPackViewModel : ContentTabViewModel
     }
 
     public ObservableCollection<ShaderPackInfo> Packs { get; } = [];
+    public bool IsEmpty => Packs.Count == 0;
     public AsyncCommand RefreshCommand { get; }
     public AsyncCommand ApplyCommand { get; }
     public AsyncCommand AddCommand { get; }
@@ -396,6 +403,7 @@ public sealed class ShaderPackViewModel : ContentTabViewModel
         foreach (var pack in await _manager.GetPacksAsync(token)) Packs.Add(pack);
         SelectedPack = Packs.FirstOrDefault(pack => pack.FileName == selectedName)
             ?? Packs.FirstOrDefault(pack => pack.IsSelected);
+        RaisePropertyChanged(nameof(IsEmpty));
     }
 
     protected override void OnBusyChanged()
@@ -426,6 +434,7 @@ public sealed class ResourcePackViewModel : ContentTabViewModel
     }
 
     public ObservableCollection<ResourcePackItem> Packs { get; } = [];
+    public bool IsEmpty => Packs.Count == 0;
     public AsyncCommand RefreshCommand { get; }
     public AsyncCommand ApplyCommand { get; }
     public AsyncCommand AddCommand { get; }
@@ -559,6 +568,7 @@ public sealed class ResourcePackViewModel : ContentTabViewModel
             Packs.Add(item);
         }
         SelectedPack = Packs.FirstOrDefault(pack => pack.Id == selectedId);
+        RaisePropertyChanged(nameof(IsEmpty));
     }
 
     private void OnItemEnabledChanged(object? sender, EventArgs e)

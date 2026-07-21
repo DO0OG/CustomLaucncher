@@ -1,4 +1,5 @@
 using CustomLauncher.Models;
+using CustomLauncher.Core;
 
 namespace CustomLauncher.ViewModels;
 
@@ -12,7 +13,7 @@ public sealed class SettingsViewModel : ViewModelBase
     private bool _discordRpcEnabled;
     private string _validationMessage = string.Empty;
 
-    public SettingsViewModel(LauncherSettings target, Func<CancellationToken, Task> save)
+    public SettingsViewModel(LauncherSettings target, Func<CancellationToken, Task> save, AppPaths? paths = null)
     {
         _target = target;
         _save = save;
@@ -28,6 +29,15 @@ public sealed class SettingsViewModel : ViewModelBase
             AutoInstallEnabled = target.Java.AutoInstallEnabled,
             CustomJvmArguments = new List<string>(target.Java.CustomJvmArguments)
         };
+        if (paths is not null)
+        {
+            var editor = new OptionsTextEditor();
+            Modules = new ModuleManagementViewModel(new ModuleManager(new HttpClient(), target.InstallPath));
+            Shaders = new ShaderPackViewModel(new ShaderPackManager(Path.Combine(target.InstallPath, "shaderpacks"),
+                Path.Combine(target.InstallPath, "optionsshaders.txt"), "shaderPack", editor));
+            ResourcePacks = new ResourcePackViewModel(new ResourcePackManager(Path.Combine(target.InstallPath, "resourcepacks"),
+                Path.Combine(target.InstallPath, "options.txt"), editor));
+        }
     }
 
     public string InstallPath { get => _installPath; set => SetProperty(ref _installPath, value); }
@@ -35,6 +45,9 @@ public sealed class SettingsViewModel : ViewModelBase
     public int ResolutionHeight { get => _resolutionHeight; set => SetProperty(ref _resolutionHeight, value); }
     public bool DiscordRpcEnabled { get => _discordRpcEnabled; set => SetProperty(ref _discordRpcEnabled, value); }
     public JavaConfig Java { get; }
+    public ModuleManagementViewModel? Modules { get; }
+    public ShaderPackViewModel? Shaders { get; }
+    public ResourcePackViewModel? ResourcePacks { get; }
     public string ValidationMessage { get => _validationMessage; private set => SetProperty(ref _validationMessage, value); }
 
     public async Task<bool> SaveAsync(CancellationToken cancellationToken = default)

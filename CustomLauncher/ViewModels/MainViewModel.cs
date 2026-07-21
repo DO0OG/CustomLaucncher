@@ -118,7 +118,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     }
 
     public SettingsViewModel CreateSettingsViewModel() =>
-        new(_settings, cancellationToken => SaveSettingsAsync(cancellationToken));
+        new(_settings, cancellationToken => SaveSettingsAsync(cancellationToken), _paths);
 
     public async Task LoginAsync()
     {

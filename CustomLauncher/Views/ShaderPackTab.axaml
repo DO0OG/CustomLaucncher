@@ -1,1 +1,7 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="CustomLauncher.Views.ShaderPackTab"><StackPanel Margin="20" Spacing="10"><TextBlock Text="쉐이더팩" FontSize="20"/><ListBox/><StackPanel Orientation="Horizontal" Spacing="8"><Button Content="추가"/><Button Content="삭제"/><Button Content="적용"/></StackPanel></StackPanel></UserControl>
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="CustomLauncher.Views.ShaderPackTab">
+  <StackPanel Margin="20" Spacing="10" DataContext="{Binding Shaders}">
+    <TextBlock Text="셰이더팩" FontSize="20"/>
+    <ListBox ItemsSource="{Binding Packs}" SelectedItem="{Binding SelectedPack}" Height="260"><ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding FileName}"/></DataTemplate></ListBox.ItemTemplate></ListBox>
+    <StackPanel Orientation="Horizontal" Spacing="8"><Button Content="새로 고침" Command="{Binding RefreshCommand}"/><Button Content="선택 적용" Command="{Binding ApplyCommand}"/></StackPanel>
+  </StackPanel>
+</UserControl>

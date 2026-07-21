@@ -1,1 +1,7 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="CustomLauncher.Views.ModManagementTab"><StackPanel Margin="20" Spacing="10"><TextBlock Text="모드 관리" FontSize="20"/><TextBlock Text="필수/선택 모드와 드롭인 모드를 안전하게 동기화합니다." TextWrapping="Wrap"/><Button Content="업데이트 확인"/><Button Content="취소"/></StackPanel></UserControl>
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="CustomLauncher.Views.ModManagementTab">
+  <StackPanel Margin="20" Spacing="10" DataContext="{Binding Modules}">
+    <TextBlock Text="모드 관리" FontSize="20"/>
+    <ListBox ItemsSource="{Binding Modules}" Height="280"><ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Id}"/></DataTemplate></ListBox.ItemTemplate></ListBox>
+    <Button Content="업데이트 확인 및 적용" Command="{Binding RefreshCommand}"/>
+  </StackPanel>
+</UserControl>

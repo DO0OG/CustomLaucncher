@@ -1,1 +1,7 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="CustomLauncher.Views.ResourcePackTab"><StackPanel Margin="20" Spacing="10"><TextBlock Text="리소스팩" FontSize="20"/><ListBox/><StackPanel Orientation="Horizontal" Spacing="8"><Button Content="추가"/><Button Content="삭제"/><Button Content="▲"/><Button Content="▼"/></StackPanel></StackPanel></UserControl>
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="CustomLauncher.Views.ResourcePackTab">
+  <StackPanel Margin="20" Spacing="10" DataContext="{Binding ResourcePacks}">
+    <TextBlock Text="리소스팩" FontSize="20"/>
+    <ListBox ItemsSource="{Binding Packs}" SelectedItem="{Binding SelectedPack}" Height="250"><ListBox.ItemTemplate><DataTemplate><StackPanel Orientation="Horizontal" Spacing="8"><TextBlock Text="{Binding FileName}"/><TextBlock Text="필수" IsVisible="{Binding IsServerManaged}"/></StackPanel></DataTemplate></ListBox.ItemTemplate></ListBox>
+    <StackPanel Orientation="Horizontal" Spacing="8"><Button Content="새로 고침" Command="{Binding RefreshCommand}"/><Button Content="위" Command="{Binding MoveUpCommand}"/><Button Content="아래" Command="{Binding MoveDownCommand}"/><Button Content="적용" Command="{Binding ApplyCommand}"/></StackPanel>
+  </StackPanel>
+</UserControl>

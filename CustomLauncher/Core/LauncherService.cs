@@ -6,7 +6,16 @@ using CustomLauncher.Models;
 
 namespace CustomLauncher.Core;
 
-public sealed class LauncherService : IDisposable
+public interface ILauncherService : IDisposable
+{
+    Task<PreparedGameSession> PrepareGameSessionAsync(
+        LauncherSettings settings,
+        MSession session,
+        IProgress<LaunchProgress>? progress = null,
+        CancellationToken cancellationToken = default);
+}
+
+public sealed class LauncherService : ILauncherService
 {
     private readonly HttpClient _httpClient;
     private MinecraftLauncher? _launcher;

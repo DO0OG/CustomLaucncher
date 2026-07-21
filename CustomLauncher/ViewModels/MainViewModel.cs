@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Windows.Input;
 using Avalonia.Threading;
 using CmlLib.Core.Auth;
@@ -9,14 +10,18 @@ namespace CustomLauncher.ViewModels;
 
 public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
 {
+    private readonly AppPaths _paths;
     private readonly AppSettingsManager _settingsManager;
     private readonly DebugLogger _logger;
-    private readonly IAuthService _auth = new AuthService();
-    private readonly LauncherService _launcher = new();
+    private readonly IAuthService _auth;
+    private readonly ILauncherService _launcher;
     private readonly CancellationTokenSource _lifetime = new();
     private readonly HttpClient _statusHttpClient;
     private readonly ServerStatusPollingService _statusPolling;
+    private CancellationTokenSource? _currentOperation;
     private IDiscordPresenceService? _discord;
+    private ProcessWrapper? _gameProcessWrapper;
+    private Process? _gameProcess;
     private LauncherSettings _settings = new();
     private MSession? _session;
     private string _status = "초기화 중...";
@@ -28,22 +33,27 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     private string _serverMotd = string.Empty;
 
     public MainViewModel(AppPaths paths, AppSettingsManager settingsManager, DebugLogger logger)
+        : this(paths, settingsManager, logger, new AuthService(), new LauncherService()) { }
+
+    public MainViewModel(
+        AppPaths paths,
+        AppSettingsManager settingsManager,
+        DebugLogger logger,
+        IAuthService auth,
+        ILauncherService launcher)
     {
+        _paths = paths;
         _settingsManager = settingsManager;
         _logger = logger;
+        _auth = auth;
+        _launcher = launcher;
         _statusHttpClient = new HttpClient();
         var statusChecker = new ServerStatusChecker(_statusHttpClient);
         _statusPolling = new ServerStatusPollingService(statusChecker.CheckAsync, () => WindowActive);
-        _statusPolling.StatusChanged += (_, status) => Dispatcher.UIThread.Post(() =>
-        {
-            ServerStatus = status.RequestSucceeded
-                ? status.IsOnline ? $"온라인 · {status.OnlinePlayers ?? 0}/{status.MaxPlayers ?? 0}" : "오프라인"
-                : "서버 상태를 확인할 수 없음";
-            ServerMotd = status.Motd;
-        });
+        _statusPolling.StatusChanged += OnServerStatusChanged;
         LoginCommand = new AsyncCommand(LoginAsync, () => !Busy);
         LaunchCommand = new AsyncCommand(LaunchAsync, () => !Busy && _session is not null);
-        CancelCommand = new RelayCommand(() => _lifetime.Cancel(), () => Busy);
+        CancelCommand = new RelayCommand(CancelCurrentOperation, () => Busy && _currentOperation is not null);
         OpenSettingsCommand = new RelayCommand(() => SettingsRequested?.Invoke(this, EventArgs.Empty));
     }
 
@@ -52,6 +62,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     public ICommand LaunchCommand { get; }
     public ICommand CancelCommand { get; }
     public ICommand OpenSettingsCommand { get; }
+    public AppPaths Paths => _paths;
     public LauncherSettings Settings => _settings;
     public bool WindowActive { get => _windowActive; set => SetProperty(ref _windowActive, value); }
     public string ServerStatus { get => _serverStatus; private set => SetProperty(ref _serverStatus, value); }
@@ -65,57 +76,80 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         private set
         {
             if (!SetProperty(ref _busy, value)) return;
-            ((AsyncCommand)LoginCommand).NotifyCanExecuteChanged();
-            ((AsyncCommand)LaunchCommand).NotifyCanExecuteChanged();
-            ((RelayCommand)CancelCommand).NotifyCanExecuteChanged();
+            NotifyCommandStates();
         }
     }
 
     public async Task InitializeAsync()
     {
-        _settings = await _settingsManager.LoadAsync(_lifetime.Token);
-        _session = await _auth.TryRestoreAsync(_lifetime.Token);
-        _discord = new DiscordPresenceService(LauncherConfig.DiscordClientId, LauncherConfig.EnableDiscordRpc,
-            _settings.DiscordRpcEnabled, () => new DiscordRpcClientAdapter(),
-            (message, exception) => _ = _logger.WriteAsync(LauncherLogLevel.Warn, message, exception));
-        _discord.Init();
-        _discord.SetState(_session is null ? DiscordPresenceState.LauncherOpen : DiscordPresenceState.Ready);
-        _statusPolling.Start();
-        Account = _session?.Username ?? "로그인하지 않음";
-        Status = _session is null ? "로그인이 필요합니다." : "게임을 시작할 수 있습니다.";
-        ((AsyncCommand)LaunchCommand).NotifyCanExecuteChanged();
+        try
+        {
+            Status = "설정을 불러오는 중...";
+            _settings = await _settingsManager.LoadAsync(_lifetime.Token);
+            RaisePropertyChanged(nameof(Settings));
+            _session = await _auth.TryRestoreAsync(_lifetime.Token);
+            _discord = new DiscordPresenceService(LauncherConfig.DiscordClientId, LauncherConfig.EnableDiscordRpc,
+                _settings.DiscordRpcEnabled, () => new DiscordRpcClientAdapter(),
+                (message, exception) => _ = _logger.WriteAsync(LauncherLogLevel.Warn, message, exception));
+            _discord.Init();
+            _discord.SetState(_session is null ? DiscordPresenceState.LauncherOpen : DiscordPresenceState.Ready);
+            Account = _session?.Username ?? "로그인하지 않음";
+            Status = _session is null ? "로그인이 필요합니다." : "게임을 시작할 수 있습니다.";
+        }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
+        catch (Exception exception)
+        {
+            Status = "초기화에 실패했습니다. 로그를 확인해 주세요.";
+            await _logger.WriteAsync(LauncherLogLevel.Error, "Application initialization failed", exception);
+        }
+        finally
+        {
+            _statusPolling.Start();
+            NotifyCommandStates();
+        }
     }
 
-    public async Task SaveSettingsAsync()
+    public async Task SaveSettingsAsync(CancellationToken cancellationToken = default)
     {
-        await _settingsManager.SaveAsync(_settings, _lifetime.Token);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token, cancellationToken);
+        await _settingsManager.SaveAsync(_settings, linked.Token);
         _discord?.SetEnabled(_settings.DiscordRpcEnabled);
         RaisePropertyChanged(nameof(Settings));
     }
 
-    private async Task LoginAsync()
+    public async Task LoginAsync()
     {
+        if (Busy) return;
+        using var operation = BeginOperation();
         Busy = true;
         Status = "Microsoft 계정 로그인 중...";
         try
         {
-            _session = await _auth.AuthenticateAsync(_lifetime.Token);
+            _session = await _auth.AuthenticateAsync(operation.Token);
             Account = _session?.Username ?? "로그인 실패";
             Status = _session is null ? "로그인하지 못했습니다." : "로그인했습니다.";
             if (_session is not null) _discord?.SetState(DiscordPresenceState.Ready);
-            ((AsyncCommand)LaunchCommand).NotifyCanExecuteChanged();
         }
-        catch (Exception ex)
+        catch (OperationCanceledException) when (operation.IsCancellationRequested)
+        {
+            Status = "로그인이 취소되었습니다.";
+        }
+        catch (Exception exception)
         {
             Status = "로그인 중 오류가 발생했습니다.";
-            await _logger.WriteAsync(LauncherLogLevel.Error, "Authentication failed", ex);
+            await _logger.WriteAsync(LauncherLogLevel.Error, "Authentication failed", exception);
         }
-        finally { Busy = false; }
+        finally
+        {
+            EndOperation(operation);
+            Busy = false;
+        }
     }
 
-    private async Task LaunchAsync()
+    public async Task LaunchAsync()
     {
-        if (_session is null) return;
+        if (_session is null || Busy) return;
+        using var operation = BeginOperation();
         Busy = true;
         _discord?.SetState(DiscordPresenceState.LaunchingGame);
         Status = "게임 파일을 준비하는 중...";
@@ -126,37 +160,105 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
                 Progress = value.Ratio * 100;
                 Status = string.IsNullOrWhiteSpace(value.Detail) ? value.Stage : $"{value.Stage}: {value.Detail}";
             }));
-            var prepared = await _launcher.PrepareGameSessionAsync(_settings, _session, progress, _lifetime.Token);
-            var processWrapper = new ProcessWrapper(prepared.Process);
-            processWrapper.OutputReceived += (_, line) =>
-                _ = _logger.WriteAsync(LauncherLogLevel.Debug, $"[GAME] {line}");
-            processWrapper.Exited += (_, _) => Dispatcher.UIThread.Post(() =>
-            {
-                prepared.Process.Dispose();
-                Busy = false;
-                Status = "게임이 종료되었습니다.";
-                _discord?.SetState(DiscordPresenceState.Ready);
-            });
-            processWrapper.StartWithEvents();
+            var prepared = await _launcher.PrepareGameSessionAsync(_settings, _session, progress, operation.Token);
+            AttachGameProcess(prepared.Process);
+            _gameProcessWrapper!.StartWithEvents();
             _discord?.SetState(DiscordPresenceState.Playing);
             Status = prepared.Warning ?? "게임 실행 중";
         }
-        catch (Exception ex)
+        catch (OperationCanceledException) when (operation.IsCancellationRequested)
+        {
+            Status = "게임 준비가 취소되었습니다.";
+            _discord?.SetState(DiscordPresenceState.Ready);
+            Busy = false;
+        }
+        catch (Exception exception)
         {
             Busy = false;
-            Status = "게임을 시작하지 못했습니다.";
-            await _logger.WriteAsync(LauncherLogLevel.Error, "Game launch failed", ex);
+            Status = exception.Message;
+            _discord?.SetState(DiscordPresenceState.Ready);
+            await _logger.WriteAsync(LauncherLogLevel.Error, "Game launch failed", exception);
         }
+        finally
+        {
+            EndOperation(operation);
+        }
+    }
+
+    public void CancelCurrentOperation() => _currentOperation?.Cancel();
+
+    private CancellationTokenSource BeginOperation()
+    {
+        _currentOperation?.Dispose();
+        _currentOperation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+        NotifyCommandStates();
+        return _currentOperation;
+    }
+
+    private void EndOperation(CancellationTokenSource operation)
+    {
+        if (ReferenceEquals(_currentOperation, operation)) _currentOperation = null;
+        NotifyCommandStates();
+    }
+
+    private void AttachGameProcess(Process process)
+    {
+        DetachGameProcess();
+        _gameProcess = process;
+        _gameProcessWrapper = new ProcessWrapper(process);
+        _gameProcessWrapper.OutputReceived += OnGameOutputReceived;
+        _gameProcessWrapper.Exited += OnGameExited;
+    }
+
+    private void DetachGameProcess()
+    {
+        if (_gameProcessWrapper is not null)
+        {
+            _gameProcessWrapper.OutputReceived -= OnGameOutputReceived;
+            _gameProcessWrapper.Exited -= OnGameExited;
+            _gameProcessWrapper = null;
+        }
+        _gameProcess?.Dispose();
+        _gameProcess = null;
+    }
+
+    private void OnGameOutputReceived(object? sender, string line) =>
+        _ = _logger.WriteAsync(LauncherLogLevel.Debug, $"[GAME] {line}");
+
+    private void OnGameExited(object? sender, EventArgs eventArgs) => Dispatcher.UIThread.Post(() =>
+    {
+        DetachGameProcess();
+        Busy = false;
+        Status = "게임이 종료되었습니다.";
+        _discord?.SetState(DiscordPresenceState.Ready);
+    });
+
+    private void OnServerStatusChanged(object? sender, ServerStatusInfo status) => Dispatcher.UIThread.Post(() =>
+    {
+        ServerStatus = status.RequestSucceeded
+            ? status.IsOnline ? $"온라인 · {status.OnlinePlayers ?? 0}/{status.MaxPlayers ?? 0}" : "오프라인"
+            : "서버 상태를 확인할 수 없음";
+        ServerMotd = status.Motd;
+    });
+
+    private void NotifyCommandStates()
+    {
+        ((AsyncCommand)LoginCommand).NotifyCanExecuteChanged();
+        ((AsyncCommand)LaunchCommand).NotifyCanExecuteChanged();
+        ((RelayCommand)CancelCommand).NotifyCanExecuteChanged();
     }
 
     public async ValueTask DisposeAsync()
     {
         _lifetime.Cancel();
+        _currentOperation?.Cancel();
+        _statusPolling.StatusChanged -= OnServerStatusChanged;
         await _statusPolling.DisposeAsync();
+        DetachGameProcess();
         _statusHttpClient.Dispose();
         _discord?.Dispose();
         _launcher.Dispose();
+        _currentOperation?.Dispose();
         _lifetime.Dispose();
-        await Task.CompletedTask;
     }
 }

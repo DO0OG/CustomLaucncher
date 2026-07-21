@@ -1,0 +1,63 @@
+using CmlLib.Core.Auth;
+using CustomLauncher.Core;
+using CustomLauncher.Models;
+using CustomLauncher.ViewModels;
+
+namespace CustomLauncher.Tests;
+
+public sealed class MainViewModelLifecycleTests
+{
+    [Fact]
+    public async Task CancellingLoginDoesNotCancelLaterOperations()
+    {
+        var home = Path.Combine(Path.GetTempPath(), $"launcher-lifecycle-{Guid.NewGuid():N}");
+        var paths = new AppPaths(PlatformKind.Linux, home, new Dictionary<string, string?>());
+        var auth = new BlockingAuthService();
+        await using var viewModel = new MainViewModel(
+            paths, new AppSettingsManager(paths), new DebugLogger(paths), auth, new StubLauncherService());
+
+        var firstLogin = viewModel.LoginAsync();
+        await auth.Started.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        viewModel.CancelCurrentOperation();
+        await firstLogin;
+
+        await viewModel.LoginAsync();
+        await viewModel.SaveSettingsAsync();
+
+        Assert.Equal(2, auth.AuthenticateCalls);
+        Assert.True(File.Exists(paths.SettingsFile));
+        Assert.False(viewModel.Busy);
+        Assert.Contains("로그인", viewModel.Status);
+    }
+
+    private sealed class BlockingAuthService : IAuthService
+    {
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public int AuthenticateCalls { get; private set; }
+
+        public async Task<MSession?> AuthenticateAsync(CancellationToken cancellationToken = default)
+        {
+            AuthenticateCalls++;
+            if (AuthenticateCalls == 1)
+            {
+                Started.TrySetResult();
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            }
+            return null;
+        }
+
+        public Task<MSession?> TryRestoreAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<MSession?>(null);
+    }
+
+    private sealed class StubLauncherService : ILauncherService
+    {
+        public Task<PreparedGameSession> PrepareGameSessionAsync(
+            LauncherSettings settings,
+            MSession session,
+            IProgress<LaunchProgress>? progress = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public void Dispose() { }
+    }
+}

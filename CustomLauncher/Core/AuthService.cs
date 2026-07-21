@@ -47,13 +47,14 @@ public sealed class AuthService : IAuthService
         {
             CacheDir = _paths.ConfigDir,
             CacheFileName = "msal-token-cache.bin",
-            KeyChainServiceName = "CustomLauncher.Msal",
+            // Scoped per launcher so separate server builds do not share a keychain entry.
+            KeyChainServiceName = $"{_paths.LauncherId}.Msal",
             KeyChainAccountName = "token-cache",
-            LinuxKeyRingSchema = "com.customlauncher.msal",
+            LinuxKeyRingSchema = $"com.{_paths.LauncherId.ToLowerInvariant()}.msal",
             LinuxKeyRingCollection = "default",
-            LinuxKeyRingLabel = "CustomLauncher MSAL token cache",
+            LinuxKeyRingLabel = $"{_paths.LauncherId} MSAL token cache",
             LinuxKeyRingAttr1 = new("Version", "1"),
-            LinuxKeyRingAttr2 = new("Product", "CustomLauncher")
+            LinuxKeyRingAttr2 = new("Product", _paths.LauncherId)
         };
         var application = await MsalClientHelper.BuildApplicationWithCache(LauncherConfig.MicrosoftClientId, cache);
         var provider = new MsalDeviceCodeProvider(application, result =>

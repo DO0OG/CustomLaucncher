@@ -16,6 +16,16 @@ public static class LauncherConfig
     public const string DebugLogFileName = "launcher.log";
     public const string GameLauncherName = "CustomLauncher";
 
+    /// <summary>
+    /// 이 런처를 식별하는 폴더 안전 문자열. 설정·로그·인증 캐시 폴더 이름이 여기서 나온다.
+    /// <b>서버별로 런처를 따로 빌드한다면 반드시 서버마다 다른 값을 넣어야 한다.</b>
+    /// 같은 값을 쓰면 두 런처가 같은 settings.json을 공유해 설치 경로·RAM·모듈 선택이 서로 덮어써진다.
+    /// </summary>
+    public const string LauncherId = "CustomLauncher";
+
+    /// <summary>기본 게임 설치 폴더 이름. 이것도 서버별로 달라야 게임 파일이 섞이지 않는다.</summary>
+    public const string GameFolderName = ".custom";
+
     // ── 콘텐츠 폴더 / options 파일 ─────────────────────────────────
     /// <summary>드롭인 모드가 놓이는 게임 하위 폴더.</summary>
     public const string ModsFolderName = "mods";

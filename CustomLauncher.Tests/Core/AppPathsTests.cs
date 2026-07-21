@@ -4,6 +4,55 @@ namespace CustomLauncher.Tests.Core;
 
 public sealed class AppPathsTests
 {
+    /// <summary>
+    /// Two launchers built for two servers must not share a settings file. The folder name used to
+    /// be hard-coded, so every build wrote to the same directory and overwrote the other's config.
+    /// </summary>
+    [Theory]
+    [InlineData(PlatformKind.Windows)]
+    [InlineData(PlatformKind.MacOS)]
+    [InlineData(PlatformKind.Linux)]
+    public void SeparateLauncherIdsGetSeparateDirectories(PlatformKind platform)
+    {
+        var environment = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["APPDATA"] = @"C:\Users\demo\AppData\Roaming",
+            ["LOCALAPPDATA"] = @"C:\Users\demo\AppData\Local",
+        };
+        var first = new AppPaths(platform, "/home/demo", environment, "AlphaServer", ".alpha");
+        var second = new AppPaths(platform, "/home/demo", environment, "BetaServer", ".beta");
+
+        Assert.NotEqual(first.ConfigDir, second.ConfigDir);
+        Assert.NotEqual(first.LogDir, second.LogDir);
+        Assert.NotEqual(first.DefaultGameDir, second.DefaultGameDir);
+        Assert.NotEqual(first.SettingsFile, second.SettingsFile);
+        Assert.Contains("AlphaServer", first.ConfigDir, StringComparison.Ordinal);
+        Assert.Contains("BetaServer", second.ConfigDir, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("..")]
+    [InlineData(".")]
+    public void AnUnusableLauncherIdFallsBackInsteadOfEscapingTheParentDirectory(string launcherId)
+    {
+        var paths = new AppPaths(PlatformKind.Linux, "/home/demo",
+            new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase), launcherId, ".game");
+
+        Assert.Equal("CustomLauncher", paths.LauncherId);
+        Assert.Equal(Path.Combine("/home/demo", ".config", "CustomLauncher"), paths.ConfigDir);
+    }
+
+    [Fact]
+    public void InvalidPathCharactersAreStrippedFromTheLauncherId()
+    {
+        var paths = new AppPaths(PlatformKind.Linux, "/home/demo",
+            new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase), "My/Server\0Name", ".game");
+
+        Assert.DoesNotContain(Path.GetInvalidFileNameChars(), paths.LauncherId.Contains);
+    }
+
     [Fact]
     public void WindowsPathsAreSeparated()
     {

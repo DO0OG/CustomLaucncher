@@ -67,6 +67,13 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     public ICommand OpenSettingsCommand { get; }
     public AppPaths Paths => _paths;
     public string AppDisplayName => LauncherConfig.GameLauncherName;
+    /// <summary>
+    /// The main screen shows the server's name, not its address. This is presentation, not
+    /// protection: the address is a compile-time constant and readable straight out of the binary.
+    /// </summary>
+    public string ServerName => LauncherConfig.ServerName;
+
+    /// <summary>Kept for the About window and logs, where knowing the endpoint helps support.</summary>
     public string ServerEndpoint => $"{LauncherConfig.ServerIp}:{LauncherConfig.ServerPort}";
     public LauncherSettings Settings => _settings;
     public bool WindowActive { get => _windowActive; set => SetProperty(ref _windowActive, value); }

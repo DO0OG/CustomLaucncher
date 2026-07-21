@@ -36,7 +36,7 @@
                    Fill="{StaticResource OnlineBrush}" IsVisible="{Binding ServerOnline}" />
           <Ellipse Width="8" Height="8" VerticalAlignment="Center"
                    Fill="{StaticResource OfflineBrush}" IsVisible="{Binding !ServerOnline}" />
-          <TextBlock Text="{Binding ServerEndpoint}" Classes="muted" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding ServerName}" Classes="muted" VerticalAlignment="Center" />
           <TextBlock Text="·" Classes="muted" VerticalAlignment="Center" />
           <TextBlock Text="{Binding ServerStatus}" Classes="muted" VerticalAlignment="Center" />
         </StackPanel>

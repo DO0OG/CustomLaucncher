@@ -6,6 +6,13 @@ public static class LauncherConfig
     public const string ModLoaderType = "forge";
     public const string ForgeVersion = "47.3.0";
     public const string FabricVersion = "0.15.7";
+    /// <summary>
+    /// 화면에 표시할 서버 이름. 메인 화면에는 주소 대신 이 값이 노출된다.
+    /// 주소를 가리는 것이 보호 수단은 아니다 — 실행 파일에서 그대로 읽힌다.
+    /// 스크린샷·방송으로 주소가 무심코 퍼지는 것을 줄이고 화면을 읽기 쉽게 하려는 목적이다.
+    /// </summary>
+    public const string ServerName = "DOG'S SERVER";
+
     public const string ServerIp = "play.example.com";
     public const int ServerPort = 25565;
     public const string ManifestUrl = "https://example.com/distribution.json";

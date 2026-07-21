@@ -1,6 +1,7 @@
 using System.Windows.Input;
 using Avalonia.Threading;
 using CmlLib.Core.Auth;
+using CmlLib.Core.ProcessBuilder;
 using CustomLauncher.Core;
 using CustomLauncher.Models;
 
@@ -120,18 +121,25 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         Status = "게임 파일을 준비하는 중...";
         try
         {
-            var progress = new Progress<double>(value => Dispatcher.UIThread.Post(() => Progress = value * 100));
-            var process = await _launcher.CreateGameProcessAsync(_settings, _session, progress, _lifetime.Token);
-            process.EnableRaisingEvents = true;
-            process.Exited += (_, _) => Dispatcher.UIThread.Post(() =>
+            var progress = new Progress<LaunchProgress>(value => Dispatcher.UIThread.Post(() =>
             {
+                Progress = value.Ratio * 100;
+                Status = string.IsNullOrWhiteSpace(value.Detail) ? value.Stage : $"{value.Stage}: {value.Detail}";
+            }));
+            var prepared = await _launcher.PrepareGameSessionAsync(_settings, _session, progress, _lifetime.Token);
+            var processWrapper = new ProcessWrapper(prepared.Process);
+            processWrapper.OutputReceived += (_, line) =>
+                _ = _logger.WriteAsync(LauncherLogLevel.Debug, $"[GAME] {line}");
+            processWrapper.Exited += (_, _) => Dispatcher.UIThread.Post(() =>
+            {
+                prepared.Process.Dispose();
                 Busy = false;
                 Status = "게임이 종료되었습니다.";
                 _discord?.SetState(DiscordPresenceState.Ready);
             });
-            process.Start();
+            processWrapper.StartWithEvents();
             _discord?.SetState(DiscordPresenceState.Playing);
-            Status = "게임 실행 중";
+            Status = prepared.Warning ?? "게임 실행 중";
         }
         catch (Exception ex)
         {

@@ -5,6 +5,7 @@ public static class LauncherConfig
     public const string McVersion = "1.20.1";
     public const string ModLoaderType = "forge";
     public const string ForgeVersion = "47.3.0";
+    public const string FabricVersion = "0.15.7";
     public const string ServerIp = "play.example.com";
     public const int ServerPort = 25565;
     public const string ManifestUrl = "https://example.com/distribution.json";

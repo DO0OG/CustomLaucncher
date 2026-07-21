@@ -21,6 +21,8 @@ public sealed class JavaConfig
 
     public int MaxRamMb { get; set; } = 4096;
 
+    public bool AutoInstallEnabled { get; set; }
+
     public List<string> CustomJvmArguments { get; set; } = CreateDefaultJvmArguments();
 
     [JsonIgnore]

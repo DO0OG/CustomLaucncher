@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using CmlLib.Core.ProcessBuilder;
 using CustomLauncher.Shared.Models;
+using CustomLauncher.Core.Java;
 
 namespace CustomLauncher.Core;
 
@@ -19,7 +20,8 @@ public sealed record PreparedGameSession(
 public sealed class GameSessionPreparer(
     IContentUpdateService content,
     IModLoaderInstaller modLoader,
-    IGameRuntime runtime)
+    IGameRuntime runtime,
+    IJavaProvisioner? javaProvisioner = null)
 {
     public async Task<PreparedGameSession> PrepareAsync(
         MLaunchOption launchOption,
@@ -58,6 +60,11 @@ public sealed class GameSessionPreparer(
             warning = "네트워크에 연결할 수 없어 마지막으로 검증된 콘텐츠로 실행합니다.";
             progress?.Report(new LaunchProgress("오프라인 콘텐츠 사용", 1, warning));
         }
+
+        if (javaProvisioner is not null)
+            await javaProvisioner.EnsureAsync(distribution.Java, launchOption, false, progress, cancellationToken);
+        if (distribution.Java.MinRamMb is int requiredRam && launchOption.MaximumRamMb < requiredRam)
+            warning = $"서버 권장 최소 메모리는 {requiredRam}MB입니다. 현재 최대값은 {launchOption.MaximumRamMb}MB입니다.";
 
         var targetVersion = await modLoader.EnsureInstalledAsync(progress, cancellationToken);
         progress?.Report(new LaunchProgress("게임 파일 설치", 0));

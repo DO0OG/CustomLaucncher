@@ -25,6 +25,7 @@ public sealed class SettingsViewModel : ViewModelBase
             ExecutablePath = target.Java.ExecutablePath,
             MinRamMb = target.Java.MinRamMb,
             MaxRamMb = target.Java.MaxRamMb,
+            AutoInstallEnabled = target.Java.AutoInstallEnabled,
             CustomJvmArguments = new List<string>(target.Java.CustomJvmArguments)
         };
     }

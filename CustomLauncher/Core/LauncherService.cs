@@ -3,6 +3,7 @@ using CmlLib.Core;
 using CmlLib.Core.Auth;
 using CmlLib.Core.ProcessBuilder;
 using CustomLauncher.Models;
+using CustomLauncher.Core.Java;
 
 namespace CustomLauncher.Core;
 
@@ -20,6 +21,7 @@ public sealed class LauncherService : ILauncherService
     private readonly HttpClient _httpClient;
     private MinecraftLauncher? _launcher;
     private GameSessionPreparer? _preparer;
+    private JavaProvisioningService? _javaProvisioner;
     private string? _launcherPath;
 
     public LauncherService()
@@ -34,8 +36,16 @@ public sealed class LauncherService : ILauncherService
         IProgress<LaunchProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
+        _activeSettings = settings;
         EnsureLauncher(settings.InstallPath);
-        return await _preparer!.PrepareAsync(CreateLaunchOption(settings, session), progress, cancellationToken);
+        try
+        {
+            var option = CreateLaunchOption(settings, session);
+            var result = await _preparer!.PrepareAsync(option, progress, cancellationToken);
+            settings.Java.ExecutablePath = option.JavaPath;
+            return result;
+        }
+        finally { _activeSettings = null; }
     }
 
     public async Task<Process> CreateGameProcessAsync(
@@ -81,10 +91,27 @@ public sealed class LauncherService : ILauncherService
 
         var content = new ContentUpdateService(_httpClient, path);
         var modLoader = new ModLoaderInstaller(new CmlModLoaderBackend(_launcher, minecraftPath, _httpClient));
-        _preparer = new GameSessionPreparer(content, modLoader, new CmlGameRuntime(_launcher));
+        _javaProvisioner?.Dispose();
+        _javaProvisioner = new JavaProvisioningService(new AppPaths().RuntimeDir);
+        _preparer = new GameSessionPreparer(content, modLoader, new CmlGameRuntime(_launcher),
+            new ConsentAwareJavaProvisioner(_javaProvisioner, () => _activeSettings?.Java.AutoInstallEnabled == true));
     }
 
-    public void Dispose() => _httpClient.Dispose();
+    private LauncherSettings? _activeSettings;
+
+    public void Dispose()
+    {
+        _javaProvisioner?.Dispose();
+        _httpClient.Dispose();
+    }
+
+    private sealed class ConsentAwareJavaProvisioner(IJavaProvisioner inner, Func<bool> allowInstall) : IJavaProvisioner
+    {
+        public Task<string?> EnsureAsync(CustomLauncher.Shared.Models.JavaRequirement requirement,
+            MLaunchOption launchOption, bool ignored, IProgress<LaunchProgress>? progress,
+            CancellationToken cancellationToken) =>
+            inner.EnsureAsync(requirement, launchOption, allowInstall(), progress, cancellationToken);
+    }
 
     private sealed class CmlGameRuntime(MinecraftLauncher launcher) : IGameRuntime
     {

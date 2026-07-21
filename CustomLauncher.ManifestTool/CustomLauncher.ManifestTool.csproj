@@ -9,6 +9,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CustomLauncher.Shared\CustomLauncher.Shared.csproj" />
+    <!-- Lets the tests round-trip manifests through the tool's own serializer settings
+         instead of re-declaring them and drifting apart. -->
+    <InternalsVisibleTo Include="CustomLauncher.Tests" />
   </ItemGroup>
 
 </Project>

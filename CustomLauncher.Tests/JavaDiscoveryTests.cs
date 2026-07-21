@@ -7,13 +7,15 @@ public sealed class JavaDiscoveryTests
     [Fact]
     public void WindowsDiscovery_PrefersJavaHomeAndUsesJavaw()
     {
+        var javaHome = Path.Combine("test-root", "jdk");
+        var executable = Path.Combine(javaHome, "bin", "javaw.exe");
         var fileSystem = new FakeFileSystem(
-            new Dictionary<string, string?> { ["JAVA_HOME"] = @"C:\jdk" },
-            new[] { @"C:\jdk\bin\javaw.exe" });
+            new Dictionary<string, string?> { ["JAVA_HOME"] = javaHome },
+            new[] { executable });
         var discovery = new WindowsJavaDiscovery(fileSystem, new FakeRegistry());
 
         Assert.Equal("javaw.exe", discovery.ExecutableFileName);
-        Assert.Equal(@"C:\jdk\bin\javaw.exe", discovery.ScanSystemForValidJava());
+        Assert.Equal(executable, discovery.ScanSystemForValidJava());
     }
 
     [Fact]

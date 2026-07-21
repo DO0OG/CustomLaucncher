@@ -81,9 +81,10 @@
     <Border Grid.Row="3" Background="{StaticResource SurfaceBrush}"
             BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Padding="20,14">
       <Grid ColumnDefinitions="*,Auto">
+        <!-- Errors are sentences, not labels: wrap rather than truncate the explanation. -->
         <TextBlock Grid.Column="0" Text="{Binding Status}" Classes="muted" FontSize="13"
-                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
-                   Margin="0,0,16,0" />
+                   VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="3"
+                   TextTrimming="CharacterEllipsis" Margin="0,0,16,0" />
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
           <Button Content="취소" Command="{Binding CancelCommand}" IsVisible="{Binding Busy}" />
           <Button Classes="accent" Content="Microsoft 로그인" Command="{Binding LoginCommand}"

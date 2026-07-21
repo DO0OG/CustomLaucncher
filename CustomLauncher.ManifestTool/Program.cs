@@ -57,6 +57,10 @@ internal static class ManifestToolProgram
               --existing <path>     Preserve manual metadata from an existing manifest
               --server-id <id>      Server identifier (default: scanned directory name)
               --base-url <url>      Prefix used to construct download URLs
+              --url-template <url>  URL pattern containing {path}, for hosts that take the file
+                                    path as a query parameter. One shared folder link covers every
+                                    file under it, e.g.
+                                    "https://host/d/TOKEN/files/?p=/{path}&dl=1"
               --type <type>         required|optional|dropin|shader|resource
               --packaging <value>   file|archive (defaults to file; never inferred)
               --parent <id>         Parent module id for generated modules

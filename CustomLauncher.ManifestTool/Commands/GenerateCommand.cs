@@ -74,7 +74,7 @@ public static class GenerateCommand
             {
                 Id = previous?.Id ?? CreateModuleId(manifestPath),
                 Path = manifestPath,
-                Url = BuildUrl(options.BaseUrl, manifestPath) ?? previous?.Url ?? string.Empty,
+                Url = BuildUrl(options, manifestPath) ?? previous?.Url ?? string.Empty,
                 Hash = await ComputeSha256Async(filePath, cancellationToken),
                 Type = options.Type ?? previous?.Type ?? ModuleType.RequiredMod,
                 Packaging = options.Packaging ?? previous?.Packaging ?? ModulePackaging.File,
@@ -132,13 +132,22 @@ public static class GenerateCommand
         return withoutExtension.Replace('\\', '/').Trim('/');
     }
 
-    private static string? BuildUrl(string? baseUrl, string manifestPath)
-    {
-        if (string.IsNullOrWhiteSpace(baseUrl))
-            return null;
+    /// <summary>
+    /// Placeholder replaced with the module's path, relative to the scanned directory.
+    /// </summary>
+    public const string PathPlaceholder = "{path}";
 
+    private static string? BuildUrl(GenerateOptions options, string manifestPath)
+    {
+        // Segments are escaped individually so separators survive. A literal '/' is legal in a
+        // query value too, which is what file hosts that take the path as a parameter expect.
         var escapedPath = string.Join('/', manifestPath.Split('/').Select(Uri.EscapeDataString));
-        return $"{baseUrl.TrimEnd('/')}/{escapedPath}";
+
+        if (!string.IsNullOrWhiteSpace(options.UrlTemplate))
+            return options.UrlTemplate.Replace(PathPlaceholder, escapedPath, StringComparison.Ordinal);
+        if (!string.IsNullOrWhiteSpace(options.BaseUrl))
+            return $"{options.BaseUrl.TrimEnd('/')}/{escapedPath}";
+        return null;
     }
 
 }
@@ -150,6 +159,14 @@ public sealed record GenerateOptions
     public string? ExistingPath { get; init; }
     public string? ServerId { get; init; }
     public string? BaseUrl { get; init; }
+
+    /// <summary>
+    /// URL pattern containing <see cref="GenerateCommand.PathPlaceholder"/>. Use this for hosts that
+    /// take the file path as a query parameter instead of a path suffix, such as a Seafile shared
+    /// folder: <c>https://host/d/TOKEN/files/?p=/{path}&amp;dl=1</c>. One shared folder covers every
+    /// file underneath it, so no per-file links are needed.
+    /// </summary>
+    public string? UrlTemplate { get; init; }
     public ModuleType? Type { get; init; }
     public ModulePackaging? Packaging { get; init; }
     public string? ParentId { get; init; }
@@ -167,6 +184,7 @@ public sealed record GenerateOptions
         string? existing = null;
         string? serverId = null;
         string? baseUrl = null;
+        string? urlTemplate = null;
         ModuleType? type = null;
         ModulePackaging? packaging = null;
         string? parent = null;
@@ -185,6 +203,7 @@ public sealed record GenerateOptions
                 case "--existing": existing = value; break;
                 case "--server-id": serverId = value; break;
                 case "--base-url": baseUrl = value; break;
+                case "--url-template": urlTemplate = value; break;
                 case "--type": type = ParseType(value); break;
                 case "--packaging":
                     packaging = value.ToLowerInvariant() switch
@@ -215,6 +234,15 @@ public sealed record GenerateOptions
             }
         }
 
+        if (!string.IsNullOrWhiteSpace(baseUrl) && !string.IsNullOrWhiteSpace(urlTemplate))
+            throw new ArgumentException("Use either --base-url or --url-template, not both.");
+        if (!string.IsNullOrWhiteSpace(urlTemplate) &&
+            !urlTemplate.Contains(GenerateCommand.PathPlaceholder, StringComparison.Ordinal))
+        {
+            throw new ArgumentException(
+                $"--url-template must contain {GenerateCommand.PathPlaceholder}; otherwise every module would share one URL.");
+        }
+
         return new GenerateOptions
         {
             SourceDirectory = args[0],
@@ -222,6 +250,7 @@ public sealed record GenerateOptions
             ExistingPath = existing,
             ServerId = serverId,
             BaseUrl = baseUrl,
+            UrlTemplate = urlTemplate,
             Type = type,
             Packaging = packaging,
             ParentId = parent,

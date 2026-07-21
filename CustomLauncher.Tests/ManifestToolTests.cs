@@ -53,6 +53,39 @@ public sealed class ManifestToolTests : IDisposable
     }
 
     [Fact]
+    public async Task AUrlTemplateCoversEveryFileFromOneSharedFolderLink()
+    {
+        // A Seafile shared folder gives one token for the whole directory; per-file links are not
+        // needed, and the path travels as a query parameter rather than a path suffix.
+        WriteFile("mods/a.jar", "mod-a");
+        WriteFile("mods/nested/b.jar", "mod-b");
+
+        var distribution = await GenerateCommand.GenerateAsync(Options() with
+        {
+            BaseUrl = null,
+            UrlTemplate = "https://seafile.example.com/d/TOKEN/files/?p=/{path}&dl=1",
+        });
+
+        Assert.Equal(
+            ["https://seafile.example.com/d/TOKEN/files/?p=/mods/a.jar&dl=1",
+                "https://seafile.example.com/d/TOKEN/files/?p=/mods/nested/b.jar&dl=1"],
+            distribution.Modules.Select(module => module.Url).Order(StringComparer.Ordinal));
+
+        // The launcher must accept them: query strings are fine, only the scheme is enforced.
+        CustomLauncher.Core.ModuleValidation.ValidateDistribution(distribution);
+    }
+
+    [Fact]
+    public void ATemplateWithoutThePlaceholderIsRejected() =>
+        Assert.Throws<ArgumentException>(() =>
+            GenerateOptions.Parse([_root, "--url-template", "https://host/files/?dl=1"]));
+
+    [Fact]
+    public void SupplyingBothUrlOptionsIsRejected() =>
+        Assert.Throws<ArgumentException>(() =>
+            GenerateOptions.Parse([_root, "--base-url", "https://a", "--url-template", "https://b/{path}"]));
+
+    [Fact]
     public async Task GeneratedManifestPassesTheLauncherValidator()
     {
         WriteFile("mods/a.jar", "mod-a");

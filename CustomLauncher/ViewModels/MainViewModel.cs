@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Windows.Input;
 using Avalonia.Threading;
 using CmlLib.Core.Auth;
+using CmlLib.Core.Auth.Microsoft;
 using CmlLib.Core.ProcessBuilder;
 using CustomLauncher.Core;
 using CustomLauncher.Models;
@@ -163,6 +164,15 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         catch (OperationCanceledException) when (operation.IsCancellationRequested)
         {
             Status = "로그인이 취소되었습니다.";
+        }
+        catch (JEAuthException exception) when (AuthErrors.IsMinecraftForbidden(exception))
+        {
+            // Microsoft, Xbox Live and XSTS all succeeded and Minecraft itself refused the token.
+            // Saying "check the log" here hides the two things that actually cause it.
+            Status = "마인크래프트 계정 확인을 거부했습니다(403). 이 런처의 클라이언트 ID가 "
+                + "마인크래프트 API 사용 승인을 받았는지, 그리고 이 계정이 마인크래프트를 "
+                + "보유했는지 확인해 주세요.";
+            await _logger.WriteAsync(LauncherLogLevel.Error, "Minecraft rejected the Xbox token", exception);
         }
         catch (InvalidOperationException exception)
         {

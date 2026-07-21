@@ -404,3 +404,4 @@ results.sarif
 # Local agent/runtime state
 .claude/
 .omx/
+dist/

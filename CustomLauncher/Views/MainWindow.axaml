@@ -26,6 +26,13 @@
           <TextBlock Text="{Binding ServerStatus}" Foreground="#71D99E" />
           <TextBlock Text="{Binding ServerMotd}" TextWrapping="Wrap" Opacity="0.75" MaxHeight="90" />
           <Button Content="Microsoft 로그인" Command="{Binding LoginCommand}" Height="44" />
+          <StackPanel IsVisible="{Binding !!DeviceCode}" Spacing="6">
+            <TextBlock Text="{Binding DeviceCode}" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
+              <Button Content="코드 복사" Click="CopyDeviceCodeClicked"/>
+              <Button Content="로그인 페이지 열기" Click="OpenDeviceCodeUrlClicked"/>
+            </StackPanel>
+          </StackPanel>
           <Button Content="게임 시작" Command="{Binding LaunchCommand}" Height="58" FontSize="20" />
           <Button Content="취소" Command="{Binding CancelCommand}" Height="38" />
         </StackPanel>

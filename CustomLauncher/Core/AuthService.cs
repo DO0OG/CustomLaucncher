@@ -1,7 +1,12 @@
 using CmlLib.Core.Auth;
 using CmlLib.Core.Auth.Microsoft;
+using Microsoft.Identity.Client;
+using XboxAuthNet.Game.Msal;
+using XboxAuthNet.Game.Msal.OAuth;
 
 namespace CustomLauncher.Core;
+
+public sealed record DeviceCodeInfo(string UserCode, string VerificationUrl, DateTimeOffset ExpiresOn, string Message);
 
 public interface IAuthService
 {
@@ -11,21 +16,55 @@ public interface IAuthService
 
 public sealed class AuthService : IAuthService
 {
-    private readonly JELoginHandler _handler = JELoginHandlerBuilder.BuildDefault();
+    private readonly AppPaths _paths;
+    private readonly Lazy<Task<JELoginHandler>> _handler;
+    public event EventHandler<DeviceCodeInfo>? DeviceCodeReceived;
 
-    public async Task<MSession?> AuthenticateAsync(CancellationToken cancellationToken = default)
+    public AuthService(AppPaths? paths = null)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        return await _handler.Authenticate();
+        _paths = paths ?? new AppPaths();
+        _handler = new Lazy<Task<JELoginHandler>>(CreateHandlerAsync);
     }
+
+    public async Task<MSession?> AuthenticateAsync(CancellationToken cancellationToken = default) =>
+        await (await _handler.Value).AuthenticateInteractively(cancellationToken);
 
     public async Task<MSession?> TryRestoreAsync(CancellationToken cancellationToken = default)
     {
-        try
+        if (string.IsNullOrWhiteSpace(LauncherConfig.MicrosoftClientId)) return null;
+        try { return await (await _handler.Value).AuthenticateSilently(cancellationToken); }
+        catch (MsalUiRequiredException) { return null; }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch (HttpRequestException) { return null; }
+    }
+
+    private async Task<JELoginHandler> CreateHandlerAsync()
+    {
+        if (string.IsNullOrWhiteSpace(LauncherConfig.MicrosoftClientId))
+            throw new InvalidOperationException("MicrosoftClientId가 설정되지 않았습니다. 운영자 인증 설정을 확인해 주세요.");
+        _paths.EnsureCreated();
+        var cache = new MsalCacheSettings
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            return await _handler.AuthenticateSilently();
-        }
-        catch { return null; }
+            CacheDir = _paths.ConfigDir,
+            CacheFileName = "msal-token-cache.bin",
+            KeyChainServiceName = "CustomLauncher.Msal",
+            KeyChainAccountName = "token-cache",
+            LinuxKeyRingSchema = "com.customlauncher.msal",
+            LinuxKeyRingCollection = "default",
+            LinuxKeyRingLabel = "CustomLauncher MSAL token cache",
+            LinuxKeyRingAttr1 = new("Version", "1"),
+            LinuxKeyRingAttr2 = new("Product", "CustomLauncher")
+        };
+        var application = await MsalClientHelper.BuildApplicationWithCache(LauncherConfig.MicrosoftClientId, cache);
+        var provider = new MsalDeviceCodeProvider(application, result =>
+        {
+            DeviceCodeReceived?.Invoke(this, new DeviceCodeInfo(
+                result.UserCode, result.VerificationUrl, result.ExpiresOn, result.Message));
+            return Task.CompletedTask;
+        });
+        return new JELoginHandlerBuilder()
+            .WithAccountManager(Path.Combine(_paths.ConfigDir, "minecraft-accounts.json"))
+            .WithOAuthProvider(provider)
+            .Build();
     }
 }

@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using CustomLauncher.ViewModels;
+using System.Diagnostics;
 
 namespace CustomLauncher.Views;
 
@@ -24,6 +25,18 @@ public partial class MainWindow : Window
     }
 
     private void CloseClicked(object? sender, RoutedEventArgs e) => Close();
+
+    private async void CopyDeviceCodeClicked(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is MainViewModel vm && Clipboard is not null)
+            await Clipboard.SetTextAsync(vm.DeviceCode);
+    }
+
+    private void OpenDeviceCodeUrlClicked(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is MainViewModel vm && Uri.TryCreate(vm.DeviceCodeUrl, UriKind.Absolute, out var uri))
+            Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
+    }
 
     private async void ShowSettings(object? sender, EventArgs e)
     {

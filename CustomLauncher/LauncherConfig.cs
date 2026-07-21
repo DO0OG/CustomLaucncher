@@ -17,5 +17,6 @@ public static class LauncherConfig
     public const string GameLauncherName = "CustomLauncher";
     public const string UserAgent = "CustomLauncher/2.0 (+https://github.com/DO0OG/CustomLaucncher)";
     public const string DiscordClientId = "";
+    public const string MicrosoftClientId = "";
     public const bool EnableDiscordRpc = false;
 }

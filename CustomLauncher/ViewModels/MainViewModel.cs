@@ -33,7 +33,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     private string _serverMotd = string.Empty;
 
     public MainViewModel(AppPaths paths, AppSettingsManager settingsManager, DebugLogger logger)
-        : this(paths, settingsManager, logger, new AuthService(), new LauncherService()) { }
+        : this(paths, settingsManager, logger, new AuthService(paths), new LauncherService()) { }
 
     public MainViewModel(
         AppPaths paths,
@@ -46,6 +46,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         _settingsManager = settingsManager;
         _logger = logger;
         _auth = auth;
+        if (_auth is AuthService deviceAuth) deviceAuth.DeviceCodeReceived += OnDeviceCodeReceived;
         _launcher = launcher;
         _statusHttpClient = new HttpClient();
         var statusChecker = new ServerStatusChecker(_statusHttpClient);
@@ -67,6 +68,8 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     public bool WindowActive { get => _windowActive; set => SetProperty(ref _windowActive, value); }
     public string ServerStatus { get => _serverStatus; private set => SetProperty(ref _serverStatus, value); }
     public string ServerMotd { get => _serverMotd; private set => SetProperty(ref _serverMotd, value); }
+    public string DeviceCode { get; private set; } = string.Empty;
+    public string DeviceCodeUrl { get; private set; } = string.Empty;
     public string Status { get => _status; private set => SetProperty(ref _status, value); }
     public string Account { get => _account; private set => SetProperty(ref _account, value); }
     public double Progress { get => _progress; private set => SetProperty(ref _progress, value); }
@@ -251,11 +254,21 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         ((RelayCommand)CancelCommand).NotifyCanExecuteChanged();
     }
 
+    private void OnDeviceCodeReceived(object? sender, DeviceCodeInfo info) => Dispatcher.UIThread.Post(() =>
+    {
+        DeviceCode = info.UserCode;
+        DeviceCodeUrl = info.VerificationUrl;
+        RaisePropertyChanged(nameof(DeviceCode));
+        RaisePropertyChanged(nameof(DeviceCodeUrl));
+        Status = info.Message;
+    });
+
     public async ValueTask DisposeAsync()
     {
         _lifetime.Cancel();
         _currentOperation?.Cancel();
         _statusPolling.StatusChanged -= OnServerStatusChanged;
+        if (_auth is AuthService deviceAuth) deviceAuth.DeviceCodeReceived -= OnDeviceCodeReceived;
         await _statusPolling.DisposeAsync();
         DetachGameProcess();
         _statusHttpClient.Dispose();

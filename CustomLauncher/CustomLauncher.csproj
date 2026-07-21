@@ -23,6 +23,7 @@
     <!-- The advisory targets WriteToDirectory. ModuleManager never calls it: entries
          are preflighted and streamed through the repository path guard instead. -->
     <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-6c8g-7p36-r338" />
+    <PackageReference Include="XboxAuthNet.Game.Msal" Version="0.1.2" />
   </ItemGroup>
 
   <ItemGroup>

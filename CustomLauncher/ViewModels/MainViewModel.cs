@@ -53,7 +53,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         var statusChecker = new ServerStatusChecker(_statusHttpClient);
         _statusPolling = new ServerStatusPollingService(statusChecker.CheckAsync, () => WindowActive);
         _statusPolling.StatusChanged += OnServerStatusChanged;
-        LoginCommand = new AsyncCommand(LoginAsync, () => !Busy);
+        LoginCommand = new AsyncCommand(LoginAsync, () => !Busy && AuthConfigured);
         LaunchCommand = new AsyncCommand(LaunchAsync, () => !Busy && _session is not null);
         CancelCommand = new RelayCommand(CancelCurrentOperation, () => Busy && _currentOperation is not null);
         OpenSettingsCommand = new RelayCommand(() => SettingsRequested?.Invoke(this, EventArgs.Empty));
@@ -76,6 +76,16 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
 
     /// <summary>The device-code panel only belongs on screen while a code is pending.</summary>
     public bool HasDeviceCode => !string.IsNullOrEmpty(DeviceCode);
+
+    /// <summary>
+    /// False until an operator fills in the Microsoft client id. Without it the login button would
+    /// fail on every click with a generic error, so the launcher says so up front instead.
+    /// </summary>
+    public bool AuthConfigured => LauncherConfig.IsMicrosoftAuthConfigured;
+    public bool HasConfigurationWarning => !AuthConfigured;
+    public string ConfigurationWarning =>
+        "Microsoft 로그인이 아직 설정되지 않았습니다. 이 런처를 배포하는 운영자가 "
+        + "LauncherConfig.MicrosoftClientId에 Azure 앱의 클라이언트 ID를 넣어야 로그인할 수 있습니다.";
 
     /// <summary>Swaps the primary action between "sign in" and "play".</summary>
     public bool IsAuthenticated => _session is not null;
@@ -109,7 +119,9 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
             _discord.Init();
             _discord.SetState(_session is null ? DiscordPresenceState.LauncherOpen : DiscordPresenceState.Ready);
             Account = _session?.Username ?? "로그인하지 않음";
-            Status = _session is null ? "로그인이 필요합니다." : "게임을 시작할 수 있습니다.";
+            Status = _session is not null ? "게임을 시작할 수 있습니다."
+                : AuthConfigured ? "로그인이 필요합니다."
+                : "로그인 설정이 필요합니다.";
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
         catch (Exception exception)
@@ -152,9 +164,15 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         {
             Status = "로그인이 취소되었습니다.";
         }
+        catch (InvalidOperationException exception)
+        {
+            // Configuration problems are actionable, so show what actually went wrong.
+            Status = exception.Message;
+            await _logger.WriteAsync(LauncherLogLevel.Error, "Authentication failed", exception);
+        }
         catch (Exception exception)
         {
-            Status = "로그인 중 오류가 발생했습니다.";
+            Status = "로그인 중 오류가 발생했습니다. 로그를 확인해 주세요.";
             await _logger.WriteAsync(LauncherLogLevel.Error, "Authentication failed", exception);
         }
         finally

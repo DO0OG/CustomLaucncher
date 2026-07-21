@@ -34,6 +34,14 @@ public static class LauncherConfig
     public const string ShaderSettingsKey = "shaderPack";
     public const string UserAgent = "CustomLauncher/2.0 (+https://github.com/DO0OG/CustomLaucncher)";
     public const string DiscordClientId = "";
+    /// <summary>
+    /// Azure Entra(공개 클라이언트) 앱의 애플리케이션 ID. 런처마다 직접 등록해야 하며,
+    /// 라이브러리에 내장된 기본값은 없다. 비어 있으면 로그인이 비활성화된다.
+    /// 등록 방법은 docs/AUTH_FLOW.md 참조.
+    /// </summary>
     public const string MicrosoftClientId = "";
+
+    /// <summary>운영자가 클라이언트 ID를 채웠는지 여부. UI가 로그인 가능 상태를 판단하는 데 쓴다.</summary>
+    public static bool IsMicrosoftAuthConfigured => !string.IsNullOrWhiteSpace(MicrosoftClientId);
     public const bool EnableDiscordRpc = false;
 }

@@ -44,6 +44,15 @@
                    HorizontalAlignment="Center" TextAlignment="Center" />
       </StackPanel>
 
+      <!-- Shown until an operator supplies a Microsoft client id; login cannot work without it. -->
+      <Border Classes="card" IsVisible="{Binding HasConfigurationWarning}"
+              BorderBrush="{StaticResource WarningBrush}">
+        <StackPanel Spacing="6">
+          <TextBlock Text="로그인 설정 필요" Classes="h2" Foreground="{StaticResource WarningBrush}" />
+          <TextBlock Text="{Binding ConfigurationWarning}" Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
       <!-- Only on screen while a device code is actually pending. -->
       <Border Classes="card" IsVisible="{Binding HasDeviceCode}">
         <StackPanel Spacing="10">

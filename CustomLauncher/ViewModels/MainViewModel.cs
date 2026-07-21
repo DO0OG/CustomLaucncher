@@ -117,6 +117,9 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         RaisePropertyChanged(nameof(Settings));
     }
 
+    public SettingsViewModel CreateSettingsViewModel() =>
+        new(_settings, cancellationToken => SaveSettingsAsync(cancellationToken));
+
     public async Task LoginAsync()
     {
         if (Busy) return;

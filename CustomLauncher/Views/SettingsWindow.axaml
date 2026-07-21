@@ -15,19 +15,21 @@
           </Grid>
           <TextBlock Text="화면 크기" />
           <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-            <NumericUpDown Value="{Binding Resolution.Width}" Minimum="640" Maximum="7680" />
-            <NumericUpDown Grid.Column="1" Value="{Binding Resolution.Height}" Minimum="480" Maximum="4320" />
+            <NumericUpDown Value="{Binding ResolutionWidth}" Minimum="640" Maximum="7680" />
+            <NumericUpDown Grid.Column="1" Value="{Binding ResolutionHeight}" Minimum="480" Maximum="4320" />
           </Grid>
           <CheckBox IsChecked="{Binding DiscordRpcEnabled}" Content="Discord 활동 상태 사용" />
+          <TextBlock Text="{Binding ValidationMessage}" Foreground="#E85D75" />
         </StackPanel>
       </TabItem>
       <TabItem Header="Java"><views:JavaSettingsTab /></TabItem>
       <TabItem Header="모드"><views:ModManagementTab /></TabItem>
-      <TabItem Header="쉐이더"><views:ShaderPackTab /></TabItem>
+      <TabItem Header="셰이더"><views:ShaderPackTab /></TabItem>
       <TabItem Header="리소스팩"><views:ResourcePackTab /></TabItem>
     </TabControl>
     <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
       <Button Content="정보" Click="AboutClicked" />
+      <Button Content="취소" Click="CancelClicked" />
       <Button Content="저장" IsDefault="True" Click="SaveClicked" />
     </StackPanel>
   </Grid>

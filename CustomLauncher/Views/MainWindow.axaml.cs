@@ -28,8 +28,7 @@ public partial class MainWindow : Window
     private async void ShowSettings(object? sender, EventArgs e)
     {
         if (DataContext is not MainViewModel vm) return;
-        var window = new SettingsWindow(vm.Settings);
-        await window.ShowDialog(this);
-        await vm.SaveSettingsAsync();
+        var window = new SettingsWindow(vm.CreateSettingsViewModel());
+        await window.ShowDialog<bool>(this);
     }
 }

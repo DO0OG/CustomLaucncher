@@ -3,10 +3,11 @@ using CustomLauncher.Models;
 
 namespace CustomLauncher.ViewModels;
 
-public sealed class SettingsViewModel : ViewModelBase
+public sealed class SettingsViewModel : ViewModelBase, IDisposable
 {
     private readonly LauncherSettings _target;
     private readonly Func<CancellationToken, Task> _save;
+    private readonly HttpClient? _ownedHttpClient;
     private string _installPath;
     private int _resolutionWidth;
     private int _resolutionHeight;
@@ -21,30 +22,40 @@ public sealed class SettingsViewModel : ViewModelBase
         _resolutionWidth = target.Resolution.Width;
         _resolutionHeight = target.Resolution.Height;
         _discordRpcEnabled = target.DiscordRpcEnabled;
-        Java = new JavaConfig
-        {
-            ExecutablePath = target.Java.ExecutablePath,
-            MinRamMb = target.Java.MinRamMb,
-            MaxRamMb = target.Java.MaxRamMb,
-            AutoInstallEnabled = target.Java.AutoInstallEnabled,
-            CustomJvmArguments = new List<string>(target.Java.CustomJvmArguments)
-        };
-        if (paths is not null)
-        {
-            var editor = new OptionsTextEditor();
-            Modules = new ModuleManagementViewModel(new ModuleManager(new HttpClient(), target.InstallPath));
-            Shaders = new ShaderPackViewModel(new ShaderPackManager(Path.Combine(target.InstallPath, "shaderpacks"),
-                Path.Combine(target.InstallPath, "optionsshaders.txt"), "shaderPack", editor));
-            ResourcePacks = new ResourcePackViewModel(new ResourcePackManager(Path.Combine(target.InstallPath, "resourcepacks"),
-                Path.Combine(target.InstallPath, "options.txt"), editor));
-        }
+        Java = new JavaSettingsViewModel(target.Java);
+
+        if (paths is null) return;
+
+        // Content tabs need a live game directory; they are only built for the real app.
+        var installPath = string.IsNullOrWhiteSpace(target.InstallPath) ? paths.DefaultGameDir : target.InstallPath;
+        var editor = new OptionsTextEditor();
+        _ownedHttpClient = new HttpClient();
+        _ownedHttpClient.DefaultRequestHeaders.UserAgent.ParseAdd(LauncherConfig.UserAgent);
+
+        Modules = new ModuleManagementViewModel(
+            new ContentUpdateService(_ownedHttpClient, installPath),
+            new DropInModManager(Path.Combine(installPath, LauncherConfig.ModsFolderName)),
+            new ModuleManagementViewModel.ModuleSelectionStore(
+                () => _target.DisabledOptionalModuleIds,
+                async token => { await SaveAsync(token); }));
+
+        Shaders = new ShaderPackViewModel(new ShaderPackManager(
+            Path.Combine(installPath, LauncherConfig.ShaderPackFolderName),
+            Path.Combine(installPath, LauncherConfig.ShaderSettingsFileName),
+            LauncherConfig.ShaderSettingsKey,
+            editor));
+
+        ResourcePacks = new ResourcePackViewModel(new ResourcePackManager(
+            Path.Combine(installPath, LauncherConfig.ResourcePackFolderName),
+            Path.Combine(installPath, LauncherConfig.GameOptionsFileName),
+            editor));
     }
 
     public string InstallPath { get => _installPath; set => SetProperty(ref _installPath, value); }
     public int ResolutionWidth { get => _resolutionWidth; set => SetProperty(ref _resolutionWidth, value); }
     public int ResolutionHeight { get => _resolutionHeight; set => SetProperty(ref _resolutionHeight, value); }
     public bool DiscordRpcEnabled { get => _discordRpcEnabled; set => SetProperty(ref _discordRpcEnabled, value); }
-    public JavaConfig Java { get; }
+    public JavaSettingsViewModel Java { get; }
     public ModuleManagementViewModel? Modules { get; }
     public ShaderPackViewModel? Shaders { get; }
     public ResourcePackViewModel? ResourcePacks { get; }
@@ -52,12 +63,13 @@ public sealed class SettingsViewModel : ViewModelBase
 
     public async Task<bool> SaveAsync(CancellationToken cancellationToken = default)
     {
+        // Validate before touching the model so a rejected save leaves settings untouched.
         if (!Validate()) return false;
         Directory.CreateDirectory(InstallPath);
         _target.InstallPath = Path.GetFullPath(InstallPath);
         _target.Resolution = new Resolution(ResolutionWidth, ResolutionHeight);
         _target.DiscordRpcEnabled = DiscordRpcEnabled;
-        _target.Java = Java;
+        Java.ApplyTo(_target.Java);
         await _save(cancellationToken);
         return true;
     }
@@ -69,7 +81,7 @@ public sealed class SettingsViewModel : ViewModelBase
         if (ResolutionWidth is < 640 or > 7680 || ResolutionHeight is < 480 or > 4320)
             return Fail("화면 크기가 허용 범위를 벗어났습니다.");
         if (Java.MinRamMb < 512 || Java.MaxRamMb < Java.MinRamMb)
-            return Fail("Java 메모리 범위를 확인해 주세요.");
+            return Fail("Java 메모리 범위를 확인해 주세요. 최대값은 최소값보다 커야 합니다.");
         ValidationMessage = string.Empty;
         return true;
     }
@@ -78,5 +90,14 @@ public sealed class SettingsViewModel : ViewModelBase
     {
         ValidationMessage = message;
         return false;
+    }
+
+    public void Dispose()
+    {
+        Modules?.Dispose();
+        Shaders?.Dispose();
+        ResourcePacks?.Dispose();
+        Java.Dispose();
+        _ownedHttpClient?.Dispose();
     }
 }

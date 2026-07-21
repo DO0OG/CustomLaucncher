@@ -1,7 +1,51 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="CustomLauncher.Views.ModManagementTab">
-  <StackPanel Margin="20" Spacing="10" DataContext="{Binding Modules}">
-    <TextBlock Text="모드 관리" FontSize="20"/>
-    <ListBox ItemsSource="{Binding Modules}" Height="280"><ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Id}"/></DataTemplate></ListBox.ItemTemplate></ListBox>
-    <Button Content="업데이트 확인 및 적용" Command="{Binding RefreshCommand}"/>
-  </StackPanel>
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="CustomLauncher.Views.ModManagementTab">
+  <Grid Margin="16" RowDefinitions="Auto,*,Auto,Auto,Auto" DataContext="{Binding Modules}">
+    <TextBlock Grid.Row="0" Text="모드 관리" FontSize="20" Margin="0,0,0,8" />
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,8,*">
+      <DockPanel Grid.Column="0">
+        <TextBlock DockPanel.Dock="Top" Text="서버 배포 모듈" Opacity="0.7" Margin="0,0,0,4" />
+        <ListBox ItemsSource="{Binding Modules}">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Grid ColumnDefinitions="Auto,*,Auto" IsEnabled="{Binding IsEffectivelyEnabled}">
+                <CheckBox Grid.Column="0" IsChecked="{Binding IsEnabled}"
+                          IsVisible="{Binding IsOptional}" Margin="0,0,6,0" />
+                <TextBlock Grid.Column="1" Text="{Binding DisplayName}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="{Binding TypeLabel}" Opacity="0.6" VerticalAlignment="Center" />
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+
+      <DockPanel Grid.Column="2">
+        <TextBlock DockPanel.Dock="Top" Text="드롭인 모드 (직접 추가한 jar)" Opacity="0.7" Margin="0,0,0,4" />
+        <ListBox ItemsSource="{Binding DropIns}" SelectedItem="{Binding SelectedDropIn}">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="{Binding FileName}" />
+                <TextBlock Text="서버" Opacity="0.6" IsVisible="{Binding IsServerManaged}" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Grid>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,10,0,0">
+      <Button Content="목록 새로 고침" Command="{Binding RefreshCommand}" />
+      <Button Content="업데이트 적용" Command="{Binding UpdateCommand}" />
+      <Button Content="jar 추가" Command="{Binding AddDropInCommand}" />
+      <Button Content="선택 삭제" Command="{Binding DeleteDropInCommand}" />
+      <Button Content="취소" Command="{Binding CancelCommand}" />
+    </StackPanel>
+
+    <ProgressBar Grid.Row="3" Margin="0,10,0,0" Height="6" IsIndeterminate="True"
+                 IsVisible="{Binding Busy}" />
+    <TextBlock Grid.Row="4" Text="{Binding Message}" TextWrapping="Wrap" Margin="0,8,0,0" Opacity="0.85" />
+  </Grid>
 </UserControl>

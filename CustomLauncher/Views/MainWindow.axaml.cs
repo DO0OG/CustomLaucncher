@@ -41,7 +41,9 @@ public partial class MainWindow : Window
     private async void ShowSettings(object? sender, EventArgs e)
     {
         if (DataContext is not MainViewModel vm) return;
-        var window = new SettingsWindow(vm.CreateSettingsViewModel());
+        // The settings view model owns an HttpClient and cancellation scopes for the content tabs.
+        using var settings = vm.CreateSettingsViewModel();
+        var window = new SettingsWindow(settings);
         await window.ShowDialog<bool>(this);
     }
 }

@@ -21,7 +21,8 @@ public sealed class GameSessionPreparer(
     IContentUpdateService content,
     IModLoaderInstaller modLoader,
     IGameRuntime runtime,
-    IJavaProvisioner? javaProvisioner = null)
+    IJavaProvisioner? javaProvisioner = null,
+    Func<IReadOnlyCollection<string>>? disabledOptionalModules = null)
 {
     public async Task<PreparedGameSession> PrepareAsync(
         MLaunchOption launchOption,
@@ -34,6 +35,8 @@ public sealed class GameSessionPreparer(
         {
             progress?.Report(new LaunchProgress("매니페스트 조회", 0));
             distribution = await content.FetchAsync(cancellationToken);
+            // Honour the user's optional-module choices before touching the game directory.
+            distribution = ModuleSelection.Filter(distribution, disabledOptionalModules?.Invoke());
             progress?.Report(new LaunchProgress("콘텐츠 동기화", 0));
             var update = await content.UpdateAsync(distribution, cancellationToken);
             switch (update.Status)

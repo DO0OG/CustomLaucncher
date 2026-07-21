@@ -51,6 +51,9 @@ public partial class App : Application
 
     private void RegisterUnhandledExceptionLogging()
     {
+        // Commands route failures here when the view model supplied no local handler.
+        ViewModels.AsyncCommand.UnhandledError += exception =>
+            _ = _logger?.WriteAsync(LauncherLogLevel.Error, "Command failed", exception);
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
         {
             var exception = args.ExceptionObject as Exception

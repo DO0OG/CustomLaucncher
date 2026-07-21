@@ -11,6 +11,12 @@ public sealed class LauncherSettings
     public bool DiscordRpcEnabled { get; set; }
     public string? SelectedShaderPackId { get; set; }
     public List<string> EnabledResourcePacks { get; set; } = [];
+
+    /// <summary>
+    /// 사용자가 끈 선택형(Optional) 모듈의 Id. 서버 매니페스트는 서버 소유이므로
+    /// 사용자 선택 상태는 여기(사용자 설정)에만 기록한다.
+    /// </summary>
+    public List<string> DisabledOptionalModuleIds { get; set; } = [];
 }
 
 public sealed record Resolution(int Width, int Height)

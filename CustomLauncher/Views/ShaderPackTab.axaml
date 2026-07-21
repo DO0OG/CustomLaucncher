@@ -1,7 +1,28 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="CustomLauncher.Views.ShaderPackTab">
-  <StackPanel Margin="20" Spacing="10" DataContext="{Binding Shaders}">
-    <TextBlock Text="셰이더팩" FontSize="20"/>
-    <ListBox ItemsSource="{Binding Packs}" SelectedItem="{Binding SelectedPack}" Height="260"><ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding FileName}"/></DataTemplate></ListBox.ItemTemplate></ListBox>
-    <StackPanel Orientation="Horizontal" Spacing="8"><Button Content="새로 고침" Command="{Binding RefreshCommand}"/><Button Content="선택 적용" Command="{Binding ApplyCommand}"/></StackPanel>
-  </StackPanel>
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="CustomLauncher.Views.ShaderPackTab">
+  <Grid Margin="16" RowDefinitions="Auto,*,Auto,Auto" DataContext="{Binding Shaders}">
+    <TextBlock Grid.Row="0" Text="셰이더팩" FontSize="20" Margin="0,0,0,8" />
+
+    <ListBox Grid.Row="1" ItemsSource="{Binding Packs}" SelectedItem="{Binding SelectedPack}">
+      <ListBox.ItemTemplate>
+        <DataTemplate>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="{Binding FileName}" VerticalAlignment="Center" />
+            <TextBlock Text="서버 배포" Opacity="0.6" IsVisible="{Binding IsServerManaged}" VerticalAlignment="Center" />
+            <TextBlock Text="적용 중" Foreground="#71D99E" IsVisible="{Binding IsSelected}" VerticalAlignment="Center" />
+          </StackPanel>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,10,0,0">
+      <Button Content="새로 고침" Command="{Binding RefreshCommand}" />
+      <Button Content="추가" Command="{Binding AddCommand}" />
+      <Button Content="삭제" Command="{Binding DeleteCommand}" />
+      <Button Content="선택 적용" Command="{Binding ApplyCommand}" />
+    </StackPanel>
+
+    <TextBlock Grid.Row="3" Text="{Binding Message}" TextWrapping="Wrap" Margin="0,8,0,0" Opacity="0.85" />
+  </Grid>
 </UserControl>

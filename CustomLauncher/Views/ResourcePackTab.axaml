@@ -1,7 +1,40 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="CustomLauncher.Views.ResourcePackTab">
-  <StackPanel Margin="20" Spacing="10" DataContext="{Binding ResourcePacks}">
-    <TextBlock Text="리소스팩" FontSize="20"/>
-    <ListBox ItemsSource="{Binding Packs}" SelectedItem="{Binding SelectedPack}" Height="250"><ListBox.ItemTemplate><DataTemplate><StackPanel Orientation="Horizontal" Spacing="8"><TextBlock Text="{Binding FileName}"/><TextBlock Text="필수" IsVisible="{Binding IsServerManaged}"/></StackPanel></DataTemplate></ListBox.ItemTemplate></ListBox>
-    <StackPanel Orientation="Horizontal" Spacing="8"><Button Content="새로 고침" Command="{Binding RefreshCommand}"/><Button Content="위" Command="{Binding MoveUpCommand}"/><Button Content="아래" Command="{Binding MoveDownCommand}"/><Button Content="적용" Command="{Binding ApplyCommand}"/></StackPanel>
-  </StackPanel>
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="CustomLauncher.Views.ResourcePackTab">
+  <Grid Margin="16" RowDefinitions="Auto,Auto,*,Auto,Auto" DataContext="{Binding ResourcePacks}">
+    <TextBlock Grid.Row="0" Text="리소스팩" FontSize="20" Margin="0,0,0,4" />
+    <TextBlock Grid.Row="1" Opacity="0.65" TextWrapping="Wrap" Margin="0,0,0,8"
+               Text="위에 있을수록 우선 적용됩니다. 항목을 끌어서 옮기거나 ▲▼ 버튼을 사용하세요. 서버 필수 팩은 항상 맨 위에 고정됩니다." />
+
+    <ListBox Grid.Row="2" Name="PackList"
+             ItemsSource="{Binding Packs}" SelectedItem="{Binding SelectedPack}"
+             DragDrop.AllowDrop="True">
+      <ListBox.ItemTemplate>
+        <DataTemplate>
+          <StackPanel>
+            <!-- Insertion indicator: the dragged pack lands above this row. -->
+            <Border Height="2" Background="#71D99E" Margin="0,0,0,2" IsVisible="{Binding IsDropTarget}" />
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <CheckBox Grid.Column="0" IsChecked="{Binding IsEnabled}" IsEnabled="{Binding CanDisable}"
+                        Margin="0,0,8,0" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{Binding FileName}" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="2" Text="필수" Opacity="0.6" VerticalAlignment="Center"
+                         IsVisible="{Binding IsServerManaged}" />
+            </Grid>
+          </StackPanel>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+
+    <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="8" Margin="0,10,0,0">
+      <Button Content="새로 고침" Command="{Binding RefreshCommand}" />
+      <Button Content="추가" Command="{Binding AddCommand}" />
+      <Button Content="삭제" Command="{Binding DeleteCommand}" />
+      <Button Content="▲" Command="{Binding MoveUpCommand}" ToolTip.Tip="선택한 리소스팩을 위로" />
+      <Button Content="▼" Command="{Binding MoveDownCommand}" ToolTip.Tip="선택한 리소스팩을 아래로" />
+      <Button Content="적용" Command="{Binding ApplyCommand}" />
+    </StackPanel>
+
+    <TextBlock Grid.Row="4" Text="{Binding Message}" TextWrapping="Wrap" Margin="0,8,0,0" Opacity="0.85" />
+  </Grid>
 </UserControl>

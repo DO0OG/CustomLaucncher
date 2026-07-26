@@ -1,0 +1,9 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="CustomLauncher.Views.AboutWindow" Width="560" Height="470" Title="정보">
+  <ScrollViewer><StackPanel Margin="24" Spacing="12">
+    <TextBlock Text="CustomLauncher 2.0" FontSize="28"/>
+    <TextBlock Text=".NET 8 기반 크로스플랫폼 Minecraft 런처"/>
+    <TextBlock Text="런타임 오픈소스 라이선스" FontSize="20" Margin="0,12,0,0"/>
+    <TextBlock TextWrapping="Wrap" Text="Avalonia UI (MIT)&#10;CmlLib.Core / Auth.Microsoft / Installer.Forge (MIT)&#10;XboxAuthNet.Game.Msal / MSAL.NET (MIT)&#10;SharpCompress (MIT)&#10;DiscordRichPresence (MIT)&#10;Velopack (MIT)"/>
+    <TextBlock TextWrapping="Wrap" Opacity="0.65" Text="상세 버전과 보안·배포 판단은 저장소의 dependency audit에서 관리합니다."/>
+  </StackPanel></ScrollViewer>
+</Window>

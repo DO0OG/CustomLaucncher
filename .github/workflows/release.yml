@@ -1,0 +1,47 @@
+name: Package release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: SemVer release version
+        required: true
+
+jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: verify
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: macos-latest
+            rid: osx-x64
+          - os: macos-latest
+            rid: osx-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet publish CustomLauncher/CustomLauncher.csproj -c Release -r ${{ matrix.rid }} --self-contained -p:PublishSingleFile=true -o artifacts/${{ matrix.rid }}
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (-not $env:WINDOWS_SIGNING_CERTIFICATE) { Write-Warning 'Unsigned Windows artifact: configure signing secrets before public release.' }
+      - if: runner.os == 'macOS'
+        run: |
+          if [ -z "$APPLE_SIGNING_IDENTITY" ]; then echo "Unsigned macOS artifact: public distribution is blocked until signing/notarization secrets are configured."; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CustomLauncher-${{ matrix.rid }}-${{ inputs.version }}
+          path: artifacts/${{ matrix.rid }}
+
+# Public release promotion is intentionally separate: signed Windows and notarized
+# macOS artifacts must be produced with repository secrets before a GitHub release.

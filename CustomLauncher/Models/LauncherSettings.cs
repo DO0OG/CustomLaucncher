@@ -1,26 +1,31 @@
-namespace CustomLauncher.Models
+namespace CustomLauncher.Models;
+
+public sealed class LauncherSettings
 {
+    public const int CurrentSchemaVersion = 2;
+
+    public int SchemaVersion { get; set; } = CurrentSchemaVersion;
+    public Resolution Resolution { get; set; } = new(1280, 720);
+    public string InstallPath { get; set; } = string.Empty;
+    public JavaConfig Java { get; set; } = JavaConfig.CreateDefault();
+    public bool DiscordRpcEnabled { get; set; }
+    public string? SelectedShaderPackId { get; set; }
+    public List<string> EnabledResourcePacks { get; set; } = [];
+
     /// <summary>
-    /// 런처 설정 및 사용자 인증 정보를 담는 데이터 모델
+    /// 사용자가 끈 선택형(Optional) 모듈의 Id. 서버 매니페스트는 서버 소유이므로
+    /// 사용자 선택 상태는 여기(사용자 설정)에만 기록한다.
     /// </summary>
-    public class LauncherSettings
-    {
-        /// <summary>마인크래프트 계정 사용자명</summary>
-        public string Username { get; set; }
+    public List<string> DisabledOptionalModuleIds { get; set; } = [];
+}
 
-        /// <summary>계정 액세스 토큰 (저장 시 AES 암호화 처리)</summary>
-        public string Password { get; set; }
+public sealed record Resolution(int Width, int Height)
+{
+    public override string ToString() => $"{Width}x{Height}";
+}
 
-        /// <summary>최대/최소 RAM 할당량 (MB 단위 문자열)</summary>
-        public string RamValue { get; set; }
-
-        /// <summary>화면 해상도 문자열 (예: "1920x1080")</summary>
-        public string Resolution { get; set; }
-
-        /// <summary>마인크래프트 설치 경로</summary>
-        public string InstallPath { get; set; }
-
-        /// <summary>현재 설치된 버전 식별자</summary>
-        public string VersionData { get; set; }
-    }
+public sealed class AccountProfile
+{
+    public string? Username { get; set; }
+    public string? SkinUrl { get; set; }
 }

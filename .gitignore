@@ -237,6 +237,8 @@ ClientBin/
 *.dbproj.schemaview
 *.jfm
 *.pfx
+*.p12
+*.snk
 *.publishsettings
 orleans.codegen.cs
 
@@ -398,3 +400,8 @@ FodyWeavers.xsd
 *.sln.iml
 
 results.sarif
+
+# Local agent/runtime state
+.claude/
+.omx/
+dist/

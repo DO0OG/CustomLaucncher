@@ -1,0 +1,65 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="CustomLauncher.ManifestTool.MainWindow"
+        Width="760" Height="660" MinWidth="640" MinHeight="560"
+        Background="{StaticResource WindowBrush}"
+        WindowStartupLocation="CenterScreen"
+        Title="배포 매니페스트 생성기">
+  <Grid RowDefinitions="*,Auto" Margin="20">
+    <ScrollViewer Grid.Row="0">
+      <StackPanel Spacing="16">
+
+        <StackPanel Spacing="6">
+          <TextBlock Classes="label" Text="배포 폴더" />
+          <TextBlock Classes="hint" Text="서버에 배포할 파일이 들어 있는 폴더입니다. 하위 폴더까지 전부 스캔합니다." />
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBox Text="{Binding SourceDirectory}" Watermark="예: D:\pack" />
+            <Button Grid.Column="1" Content="폴더 선택" Click="BrowseClicked" Margin="8,0,0,0" />
+          </Grid>
+        </StackPanel>
+
+        <StackPanel Spacing="6">
+          <TextBlock Classes="label" Text="다운로드 URL 형식" />
+          <TextBlock Classes="hint">
+            <Run Text="파일 경로가 들어갈 자리에 {path} 를 넣습니다. 예: 파일이 경로 그대로 열리면" />
+            <Run Text="https://호스트/폴더/{path}, Seafile 폴더 공유면 https://호스트/d/토큰/files/?p=/{path}&amp;dl=1" />
+          </TextBlock>
+          <TextBox Text="{Binding UrlTemplate}"
+                   Watermark="https://files.example.com/TEST/{path}"
+                   FontFamily="Consolas, Menlo, monospace" />
+        </StackPanel>
+
+        <StackPanel Spacing="6">
+          <TextBlock Classes="label" Text="서버 ID" />
+          <TextBlock Classes="hint" Text="비워두면 폴더 이름을 사용합니다." />
+          <TextBox Text="{Binding ServerId}" Watermark="예: dogs" />
+        </StackPanel>
+
+        <StackPanel Spacing="6">
+          <TextBlock Classes="label" Text="저장 위치" />
+          <TextBlock Classes="hint" Text="생성된 distribution.json 을 저장할 경로입니다." />
+          <TextBox Text="{Binding OutputPath}" Watermark="예: D:\pack\distribution.json" />
+        </StackPanel>
+
+        <CheckBox IsChecked="{Binding MergeWithExisting}"
+                  Content="기존 매니페스트의 설정 유지 (필수/선택 구분, 로드 순서 등)" />
+
+        <StackPanel Spacing="6">
+          <TextBlock Classes="label" Text="결과" />
+          <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}"
+                  BorderThickness="1" CornerRadius="8" Padding="12" MinHeight="150">
+            <TextBlock Text="{Binding Log}" TextWrapping="Wrap" FontFamily="Consolas, Menlo, monospace"
+                       FontSize="12" />
+          </Border>
+        </StackPanel>
+      </StackPanel>
+    </ScrollViewer>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,16,0,0">
+      <TextBlock Grid.Column="0" Classes="hint" VerticalAlignment="Center"
+                 Text="입력한 값은 자동으로 저장되어 다음 실행 때 그대로 남습니다." />
+      <Button Grid.Column="1" Classes="accent" Content="매니페스트 생성"
+              Click="GenerateClicked" IsEnabled="{Binding CanGenerate}" />
+    </Grid>
+  </Grid>
+</Window>

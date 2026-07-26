@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="CustomLauncher.Views.ShaderPackTab">
+  <Grid Margin="4,16" RowDefinitions="Auto,*,Auto,Auto" DataContext="{Binding Shaders}">
+    <TextBlock Grid.Row="0" Classes="muted" Margin="0,0,0,8" TextWrapping="Wrap"
+               Text="하나만 선택해 적용할 수 있습니다. 선택을 해제하고 적용하면 셰이더가 꺼집니다." />
+
+    <Panel Grid.Row="1">
+      <ListBox ItemsSource="{Binding Packs}" SelectedItem="{Binding SelectedPack}">
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <Grid ColumnDefinitions="*,Auto,Auto" Height="28">
+              <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"
+                         TextTrimming="CharacterEllipsis" />
+              <TextBlock Grid.Column="1" Text="서버 배포" Classes="muted" VerticalAlignment="Center"
+                         Margin="8,0" IsVisible="{Binding IsServerManaged}" />
+              <TextBlock Grid.Column="2" Text="적용 중" VerticalAlignment="Center" FontSize="12"
+                         Foreground="{StaticResource OnlineBrush}" IsVisible="{Binding IsSelected}" />
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+      <TextBlock Classes="muted" IsVisible="{Binding IsEmpty}" IsHitTestVisible="False"
+                 HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                 Text="셰이더팩이 없습니다.&#10;'추가'로 zip 파일을 넣어 주세요." />
+    </Panel>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,12,0,0">
+      <Button Content="추가" Command="{Binding AddCommand}" />
+      <Button Content="삭제" Command="{Binding DeleteCommand}" />
+      <Button Content="새로 고침" Command="{Binding RefreshCommand}" />
+      <Button Classes="accent" Height="34" MinWidth="130" Content="선택 적용" Command="{Binding ApplyCommand}" />
+    </StackPanel>
+
+    <TextBlock Grid.Row="3" Text="{Binding Message}" Classes="muted" TextWrapping="Wrap"
+               Margin="0,10,0,0" MinHeight="16" />
+  </Grid>
+</UserControl>

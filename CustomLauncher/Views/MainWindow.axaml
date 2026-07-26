@@ -1,0 +1,98 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="CustomLauncher.Views.MainWindow"
+        Width="880" Height="560" MinWidth="720" MinHeight="500"
+        Title="CustomLauncher"
+        Background="{StaticResource WindowBrush}"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="NoChrome"
+        ExtendClientAreaTitleBarHeightHint="44">
+
+  <Grid RowDefinitions="44,*,Auto,Auto">
+
+    <!-- Title bar. Chrome hints are off, so these are the only window buttons;
+         previously the system drew its own on top of ours. -->
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Background="Transparent"
+          PointerPressed="TitleBarPointerPressed">
+      <TextBlock Grid.Column="0" Text="{Binding AppDisplayName}" Margin="18,0,0,0"
+                 VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource MutedBrush}" />
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,6,0">
+        <Button Classes="chrome" Width="64" Content="설정" Command="{Binding OpenSettingsCommand}" />
+        <Button Classes="chrome" Content="—" Click="MinimizeClicked" ToolTip.Tip="최소화" />
+        <Button Classes="chrome danger" Content="✕" Click="CloseClicked" ToolTip.Tip="닫기" />
+      </StackPanel>
+    </Grid>
+
+    <!-- Body: one centred column. Everything that matters reads top to bottom. -->
+    <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
+                Spacing="18" Margin="40,0" MaxWidth="520">
+      <Image Source="avares://CustomLauncher/Assets/Images/logo.png"
+             Height="132" Stretch="Uniform" HorizontalAlignment="Center" />
+
+      <StackPanel Spacing="6">
+        <TextBlock Text="{Binding Account}" Classes="h1" HorizontalAlignment="Center" />
+        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+          <Ellipse Width="8" Height="8" VerticalAlignment="Center"
+                   Fill="{StaticResource OnlineBrush}" IsVisible="{Binding ServerOnline}" />
+          <Ellipse Width="8" Height="8" VerticalAlignment="Center"
+                   Fill="{StaticResource OfflineBrush}" IsVisible="{Binding !ServerOnline}" />
+          <TextBlock Text="{Binding ServerName}" Classes="muted" VerticalAlignment="Center" />
+          <TextBlock Text="·" Classes="muted" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding ServerStatus}" Classes="muted" VerticalAlignment="Center" />
+        </StackPanel>
+        <TextBlock Text="{Binding ServerMotd}" Classes="muted" TextWrapping="Wrap" MaxHeight="40"
+                   HorizontalAlignment="Center" TextAlignment="Center" />
+      </StackPanel>
+
+      <!-- Shown until an operator supplies a Microsoft client id; login cannot work without it. -->
+      <Border Classes="card" IsVisible="{Binding HasConfigurationWarning}"
+              BorderBrush="{StaticResource WarningBrush}">
+        <StackPanel Spacing="6">
+          <TextBlock Text="로그인 설정 필요" Classes="h2" Foreground="{StaticResource WarningBrush}" />
+          <TextBlock Text="{Binding ConfigurationWarning}" Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <!-- Only on screen while a device code is actually pending. -->
+      <Border Classes="card" IsVisible="{Binding HasDeviceCode}">
+        <StackPanel Spacing="10">
+          <TextBlock Text="브라우저에서 로그인" Classes="h2" />
+          <TextBlock Classes="muted" TextWrapping="Wrap"
+                     Text="아래 주소를 열고 이 코드를 입력하면 로그인이 완료됩니다." />
+          <Border Background="{StaticResource RaisedBrush}" CornerRadius="6" Padding="14,10">
+            <TextBlock Text="{Binding DeviceCode}" Classes="mono" FontSize="22"
+                       HorizontalAlignment="Center" />
+          </Border>
+          <TextBlock Text="{Binding DeviceCodeUrl}" Classes="muted" HorizontalAlignment="Center" />
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+            <Button Content="코드 복사" Click="CopyDeviceCodeClicked" />
+            <Button Content="페이지 열기" Click="OpenDeviceCodeUrlClicked" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+
+    <!-- Progress spans the window so it reads as overall launcher activity. -->
+    <ProgressBar Grid.Row="2" Height="3" Minimum="0" Maximum="100" Value="{Binding Progress}"
+                 IsVisible="{Binding Busy}" Background="Transparent"
+                 Foreground="{StaticResource AccentBrush}" />
+
+    <!-- Action bar: status on the left, the one primary action on the right. -->
+    <Border Grid.Row="3" Background="{StaticResource SurfaceBrush}"
+            BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Padding="20,14">
+      <Grid ColumnDefinitions="*,Auto">
+        <!-- Errors are sentences, not labels: wrap rather than truncate the explanation. -->
+        <TextBlock Grid.Column="0" Text="{Binding Status}" Classes="muted" FontSize="13"
+                   VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="3"
+                   TextTrimming="CharacterEllipsis" Margin="0,0,16,0" />
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+          <Button Content="취소" Command="{Binding CancelCommand}" IsVisible="{Binding Busy}" />
+          <Button Classes="accent" Content="Microsoft 로그인" Command="{Binding LoginCommand}"
+                  IsVisible="{Binding IsSignedOut}" />
+          <Button Classes="accent" Content="게임 시작" Command="{Binding LaunchCommand}"
+                  IsVisible="{Binding IsAuthenticated}" />
+        </StackPanel>
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

@@ -1,75 +1,68 @@
-namespace CustomLauncher
+namespace CustomLauncher;
+
+public static class LauncherConfig
 {
+    public const string McVersion = "1.20.1";
+    public const string ModLoaderType = "forge";
+    public const string ForgeVersion = "47.3.0";
+    public const string FabricVersion = "0.15.7";
     /// <summary>
-    /// 런처 전체에서 사용하는 유동적인 설정값을 한 곳에서 관리합니다.
-    /// 서버 주소, 파일명, 버전 정보 등을 새 런처 제작 시 여기서만 수정하면 됩니다.
+    /// 화면에 표시할 서버 이름. 메인 화면에는 주소 대신 이 값이 노출된다.
+    /// 주소를 가리는 것이 보호 수단은 아니다 — 실행 파일에서 그대로 읽힌다.
+    /// 스크린샷·방송으로 주소가 무심코 퍼지는 것을 줄이고 화면을 읽기 쉽게 하려는 목적이다.
     /// </summary>
-    public static class LauncherConfig
-    {
-        // ──────────────────────────────────────────────────────────────
-        // 게임 버전
-        // ──────────────────────────────────────────────────────────────
+    public const string ServerName = "DOG'S SERVER";
 
-        /// <summary>마인크래프트 버전 (예: "1.20.1")</summary>
-        public const string McVersion = "버전";
+    public const string ServerIp = "play.example.com";
 
-        /// <summary>모드 로더 타입 ("forge", "fabric", "none")</summary>
-        public const string ModLoaderType = "forge";
+    /// <summary>멀티플레이 목록에 등록할 주소. 기본 포트는 마인크래프트 관례대로 생략한다.</summary>
+    public static string ServerAddress =>
+        ServerPort == 25565 ? ServerIp : $"{ServerIp}:{ServerPort}";
+    public const int ServerPort = 25565;
+    public const string ManifestUrl = "https://example.com/distribution.json";
+    public const string ServerStatusApiUrl = "https://api.mcsrvstat.us/3/" + ServerIp;
+    public const string SettingsFileName = "settings.json";
+    public const string LegacySettingsFileName = "customServer_settings.txt";
+    public const string LegacyUserDataFileName = "customServer_udata";
+    public const string DebugLogFileName = "launcher.log";
+    public const string GameLauncherName = "CustomLauncher";
 
-        /// <summary>Forge 버전 (예: "47.3.0")</summary>
-        public const string ForgeVersion = "버전";
+    /// <summary>
+    /// 이 런처를 식별하는 폴더 안전 문자열. 설정·로그·인증 캐시 폴더 이름이 여기서 나온다.
+    /// <b>서버별로 런처를 따로 빌드한다면 반드시 서버마다 다른 값을 넣어야 한다.</b>
+    /// 같은 값을 쓰면 두 런처가 같은 settings.json을 공유해 설치 경로·RAM·모듈 선택이 서로 덮어써진다.
+    /// </summary>
+    public const string LauncherId = "CustomLauncher";
 
-        /// <summary>Fabric 버전 (예: "0.15.7")</summary>
-        public const string FabricVersion = "버전";
+    /// <summary>기본 게임 설치 폴더 이름. 이것도 서버별로 달라야 게임 파일이 섞이지 않는다.</summary>
+    public const string GameFolderName = ".custom";
 
-        // ──────────────────────────────────────────────────────────────
-        // 서버 주소
-        // ──────────────────────────────────────────────────────────────
+    // ── 콘텐츠 폴더 / options 파일 ─────────────────────────────────
+    /// <summary>드롭인 모드가 놓이는 게임 하위 폴더.</summary>
+    public const string ModsFolderName = "mods";
+    /// <summary>셰이더팩이 놓이는 게임 하위 폴더.</summary>
+    public const string ShaderPackFolderName = "shaderpacks";
+    /// <summary>리소스팩이 놓이는 게임 하위 폴더.</summary>
+    public const string ResourcePackFolderName = "resourcepacks";
+    /// <summary>리소스팩 목록이 기록되는 파일 (마인크래프트 표준).</summary>
+    public const string GameOptionsFileName = "options.txt";
+    /// <summary>
+    /// 셰이더 선택이 기록되는 파일. Iris/OptiFine은 <c>optionsshaders.txt</c>를 쓰고
+    /// 일부 구성은 <c>options.txt</c>에 기록한다. 서버 모드팩에 맞춰 이 값을 조정한다.
+    /// </summary>
+    public const string ShaderSettingsFileName = "optionsshaders.txt";
+    /// <summary>셰이더 선택 키. Iris/OptiFine 공통으로 <c>shaderPack</c>.</summary>
+    public const string ShaderSettingsKey = "shaderPack";
+    public const string UserAgent = "CustomLauncher/2.0 (+https://github.com/DO0OG/CustomLaucncher)";
+    public const string DiscordClientId = "";
+    /// <summary>
+    /// Azure Entra(공개 클라이언트) 앱의 애플리케이션 ID. 런처마다 직접 등록해야 하며,
+    /// 라이브러리에 내장된 기본값은 없다. 비어 있으면 로그인이 비활성화된다.
+    /// 등록 방법은 docs/AUTH_FLOW.md 참조.
+    /// </summary>
+    public const string MicrosoftClientId = "";
 
-        /// <summary>마인크래프트 서버 IP 또는 도메인 (예: "play.example.com")</summary>
-        public const string ServerIp = "서버IP주소";
-
-        /// <summary>마인크래프트 서버 포트</summary>
-        public const int ServerPort = 25565;
-
-        // ──────────────────────────────────────────────────────────────
-        // 원격 URL
-        // ──────────────────────────────────────────────────────────────
-
-        /// <summary>자동 업데이트 매니페스트 JSON 다운로드 URL</summary>
-        public const string ManifestUrl = "Manifest주소";
-
-        /// <summary>서버 상태 확인 API URL (mcsrvstat.us v3 기반)</summary>
-        public const string ServerStatusApiUrl = "https://api.mcsrvstat.us/3/" + ServerIp;
-
-        // ──────────────────────────────────────────────────────────────
-        // AppData 파일명
-        // ──────────────────────────────────────────────────────────────
-
-        /// <summary>런처 설정 파일명 (%AppData%에 저장)</summary>
-        public const string SettingsFileName = "customServer_settings.txt";
-
-        /// <summary>암호화된 사용자 인증 데이터 파일명 (%AppData%에 저장)</summary>
-        public const string UserDataFileName = "customServer_udata";
-
-        /// <summary>디버그 로그 파일명 (%AppData%에 저장)</summary>
-        public const string DebugLogFileName = "customServer_debug_log.txt";
-
-        /// <summary>7-Zip 임시 폴더명 (%AppData%에 저장)</summary>
-        public const string SevenZipTempFolder = "7Ziptemp";
-
-        // ──────────────────────────────────────────────────────────────
-        // 기본 설치 경로
-        // ──────────────────────────────────────────────────────────────
-
-        /// <summary>마인크래프트 기본 설치 폴더명 (%AppData%\{DefaultInstallFolderName})</summary>
-        public const string DefaultInstallFolderName = ".custom";
-
-        // ──────────────────────────────────────────────────────────────
-        // 런처 식별 정보
-        // ──────────────────────────────────────────────────────────────
-
-        /// <summary>게임 실행 시 런처 이름 (버전 정보에 표시됨)</summary>
-        public const string GameLauncherName = "SERVER";
-    }
+    /// <summary>운영자가 클라이언트 ID를 채웠는지 여부. UI가 로그인 가능 상태를 판단하는 데 쓴다.</summary>
+    public static bool IsMicrosoftAuthConfigured => !string.IsNullOrWhiteSpace(MicrosoftClientId);
+    public const bool EnableDiscordRpc = false;
 }

@@ -21,11 +21,11 @@
         <StackPanel Spacing="6">
           <TextBlock Classes="label" Text="다운로드 URL 형식" />
           <TextBlock Classes="hint">
-            <Run Text="파일 경로가 들어갈 자리에 {path} 를 넣습니다. Seafile은 배포 폴더를 공유해" />
-            <Run Text="/d/토큰/ 링크를 받은 뒤 아래처럼 적으면 폴더 안 모든 파일이 자동으로 처리됩니다." />
+            <Run Text="파일 경로가 들어갈 자리에 {path} 를 넣습니다. 예: 파일이 경로 그대로 열리면" />
+            <Run Text="https://호스트/폴더/{path}, Seafile 폴더 공유면 https://호스트/d/토큰/files/?p=/{path}&amp;dl=1" />
           </TextBlock>
           <TextBox Text="{Binding UrlTemplate}"
-                   Watermark="https://dogs.kro.kr/d/토큰/files/?p=/{path}&amp;dl=1"
+                   Watermark="https://files.example.com/TEST/{path}"
                    FontFamily="Consolas, Menlo, monospace" />
         </StackPanel>
 

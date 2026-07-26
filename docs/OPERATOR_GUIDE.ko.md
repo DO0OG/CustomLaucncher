@@ -53,19 +53,28 @@ D:\TEST\
     └── x.zip
 ```
 
-### 2-2. Seafile에 올리고 폴더를 공유
+### 2-2. 파일을 웹에 올리고 다운로드 주소 확인
 
-1. Seafile에 `TEST` 폴더 전체를 업로드
-2. **`TEST` 폴더**를 우클릭 → 공유 → 링크 생성
-3. `https://dogs.kro.kr/d/토큰/` 형태의 링크를 받습니다
+배포 폴더의 파일들을 **HTTPS로 접근 가능한 곳**에 올립니다. 각 파일이 고정된 다운로드
+주소를 가지기만 하면 어떤 호스팅이든 됩니다(웹 서버, 오브젝트 스토리지, 파일 공유 서비스 등).
 
-> **파일이 아니라 폴더를 공유해야 합니다.**
-> 폴더 공유는 `/d/토큰/`, 파일 공유는 `/f/토큰/` 입니다.
-> 폴더를 공유하면 **토큰 하나로 그 안의 모든 파일**이 처리됩니다.
-> 파일마다 링크를 딸 필요가 없습니다.
+가장 단순한 형태는 파일이 경로 그대로 열리는 경우입니다.
 
-> **배포용 폴더만 공유하세요.** 상위 폴더를 공유하면 링크를 아는 사람이
-> 그 안의 다른 자료까지 전부 접근할 수 있습니다.
+```
+로컬 파일   D:\TEST\mods\a.jar
+다운로드 주소  https://files.example.com/TEST/mods/a.jar
+```
+
+이때 다운로드 **URL 형식**은 `https://files.example.com/TEST/{path}` 입니다.
+`{path}` 자리에 파일 경로(`mods/a.jar`)가 자동으로 들어갑니다(→ 4장).
+
+> **Seafile 같은 공유 링크를 쓰는 경우:** 배포 폴더 하나를 공유해서 **폴더 링크**(`/d/토큰/`)를
+> 받고, URL 형식을 `https://내서버/d/토큰/files/?p=/{path}&dl=1` 로 적습니다. 폴더를 한 번
+> 공유하면 토큰 하나로 그 안의 모든 파일이 처리되며, 파일마다 링크를 딸 필요가 없습니다.
+> 파일 공유(`/f/토큰/`)가 아니라 **폴더 공유**여야 하고, 배포용 폴더만 공유하세요.
+
+> 어떤 호스팅이든 **HTTPS + 정식 인증서**여야 하며(자체 서명 인증서는 거부됨), 로그인 없이
+> 접근 가능해야 합니다.
 
 ### 2-3. `LauncherConfig.cs` 수정
 
@@ -102,7 +111,7 @@ D:\TEST\
 ### 3-1. 파일 준비
 
 배포 폴더(`D:\TEST\`)의 모드·설정을 원하는 대로 수정합니다.
-그리고 **Seafile에 올립니다.** (Seafile 클라이언트로 동기화하면 자동)
+그리고 **호스팅에 올립니다.** (2-2에서 정한 곳)
 
 ### 3-2. 매니페스트 툴 실행
 
@@ -111,7 +120,7 @@ D:\TEST\
 | 입력란 | 넣을 값 |
 |---|---|
 | **배포 폴더** | `D:\TEST` — `폴더 선택` 버튼으로 고릅니다 |
-| **다운로드 URL 형식** | `https://dogs.kro.kr/d/토큰/files/?p=/{path}&dl=1` |
+| **다운로드 URL 형식** | `https://files.example.com/TEST/{path}` (Seafile이면 `https://내서버/d/토큰/files/?p=/{path}&dl=1`) |
 | **서버 ID** | `TEST` (비워두면 폴더 이름 자동 사용) |
 | **저장 위치** | `D:\TEST\distribution.json` (폴더 고르면 자동 입력) |
 | **기존 설정 유지** | 켜둡니다 (필수/선택 구분, 로드 순서 보존) |
@@ -133,15 +142,17 @@ D:\TEST\
 
 ### 3-3. `distribution.json` 업로드
 
-생성된 `distribution.json`을 Seafile에 올립니다.
-배포 폴더 안에 저장했다면 폴더째 동기화할 때 같이 올라갑니다.
+생성된 `distribution.json`을 호스팅에 올립니다.
+배포 폴더 안에 저장했다면 폴더째 올릴 때 같이 올라갑니다.
 (툴이 이 파일은 스캔 대상에서 자동으로 제외하므로 배포 폴더 안에 둬도 됩니다.)
 
 **최초 1회만**, 이 파일의 주소를 `LauncherConfig.ManifestUrl`에 넣습니다.
 
 ```
-https://dogs.kro.kr/d/토큰/files/?p=/distribution.json&dl=1
+https://files.example.com/TEST/distribution.json
 ```
+
+(Seafile이면 이 파일만 개별 공유해서 `https://내서버/d/토큰/files/?p=/distribution.json&dl=1`)
 
 이후로는 파일 내용만 바뀌므로 주소를 다시 건드릴 일이 없습니다.
 
@@ -154,23 +165,24 @@ https://dogs.kro.kr/d/토큰/files/?p=/distribution.json&dl=1
 `{path}` 자리에 **배포 폴더 기준 상대경로**가 들어갑니다.
 
 ```
-로컬 D:\TEST\mods\a.jar        →  {path} = mods/a.jar
-생성 URL  .../files/?p=/mods/a.jar&dl=1
+로컬 D:\TEST\mods\a.jar   →   {path} = mods/a.jar
+URL 형식 https://files.example.com/TEST/{path}
+생성 URL https://files.example.com/TEST/mods/a.jar
 ```
 
-한글 파일명도 자동으로 처리됩니다(퍼센트 인코딩). 실제 서버에서 확인했습니다.
+한글 파일명도 자동으로 처리됩니다(퍼센트 인코딩).
 
-### 4-2. 중간 층이 있을 때
+### 4-2. 기준 폴더가 다를 때
 
-**공유한 폴더**와 **배포 폴더**가 다르면 그 사이 경로를 URL에 적어야 합니다.
+호스팅에서 **파일이 놓인 기준 위치**와 **툴의 배포 폴더**가 어긋나면, 그 차이만큼 URL 형식에
+적어줘야 합니다.
 
-| 공유한 폴더 | 툴의 배포 폴더 | URL 형식 |
+| 호스팅 기준 | 툴의 배포 폴더 | URL 형식 |
 |---|---|---|
-| `TEST` | `D:\TEST` | `?p=/{path}&dl=1` |
-| `TEST` | `D:\TEST\pack` | `?p=/pack/{path}&dl=1` |
-| `TEST/pack` | `D:\TEST\pack` | `?p=/{path}&dl=1` |
+| `.../TEST/` 아래에 파일 | `D:\TEST` | `https://files.example.com/TEST/{path}` |
+| `.../TEST/` 아래에 파일 | `D:\TEST\pack` | `https://files.example.com/TEST/pack/{path}` |
 
-헷갈리지 않으려면 **배포 폴더를 그대로 공유**하는 게 가장 단순합니다.
+헷갈리지 않으려면 **배포 폴더를 그대로(같은 구조로) 올리는** 게 가장 단순합니다.
 
 ### 4-3. 맞게 설정했는지 확인하는 법
 

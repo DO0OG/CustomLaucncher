@@ -1,10 +1,10 @@
 # PR을 하기 전 체크사항
 PR 전에 아래의 내용을 수행했는지 하나씩 체크해봅시다. 체크 표시는 []에 x를 넣어 [x]로 만들면 됩니다. 자세한 건 [여기](https://docs.github.com/en/issues/tracking-your-work-with-issues/about-task-lists)를 참고하세요.
 
-- [] 임시로 작성한 코드는 모두 제거했나요?
-- [] 주석은 충분히 작성했나요?
-- [] 실행했을 때, 오류는 없나요?
-- [] 커밋 메시지는 [가이드](https://docs.google.com/document/d/1bDgWctGEprMvLzV5OpuZV1-BCnrhVVJ19cd8D9tFArU/edit#heading=h.jgj6vfjils4q)에 맞춰 작성됐나요?
+- [ ] 임시로 작성한 코드는 모두 제거했나요?
+- [ ] 주석은 충분히 작성했나요?
+- [ ] 실행했을 때, 오류는 없나요?
+- [ ] 커밋 메시지는 [가이드](https://docs.google.com/document/d/1bDgWctGEprMvLzV5OpuZV1-BCnrhVVJ19cd8D9tFArU/edit#heading=h.jgj6vfjils4q)에 맞춰 작성됐나요?
 
 # 변경된 기능
 달라진 기능에는 무엇이 있는지 목록으로 작성합니다. 이번 작업 내용을 통해 할 수 있는 기능 및 행동 등을 설명해주세요.
@@ -29,9 +29,9 @@ PR 전에 아래의 내용을 수행했는지 하나씩 체크해봅시다. 체�
 # (선택)관련 이슈
 이번 변경과 관련된 이슈가 있다면 아래에 작성해주세요.
 
-- [] #{이슈번호} <!-- Ex. - [] #763 -->
-- [] #{이슈번호}
-- [] #{이슈번호}
+- [ ] #{이슈번호} <!-- Ex. - [] #763 -->
+- [ ] #{이슈번호}
+- [ ] #{이슈번호}
 
 ---
 

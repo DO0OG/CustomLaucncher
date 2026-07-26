@@ -27,6 +27,8 @@ exclude_paths:
   - "**/*.ttf"
   - "*.ttf"
   - "**/manifest.json"
+  - ".github/ISSUE_TEMPLATE/**"
+  - ".github/pull_request_template.md"
   - "CustomLauncher/icon.ico"
   - "CustomLauncher/md.ico"
   - "CustomLauncher/minecraft.ico"

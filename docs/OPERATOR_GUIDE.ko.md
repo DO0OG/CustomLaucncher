@@ -104,6 +104,30 @@ D:\TEST\
 > 낫습니다 — 마인크래프트 API 승인이 클라이언트 ID 단위라, 새로 만들면 승인을
 > 다시 받아야 합니다.
 
+### 2-4. 런처 외형 바꾸기 (선택)
+
+색·배경·투명도는 **`CustomLauncher/Appearance.axaml` 한 파일**에 모여 있습니다.
+이 파일의 값만 바꾸면 모든 창에 반영됩니다.
+
+| 항목 | 리소스 키 | 설명 |
+|---|---|---|
+| 창 배경 | `WindowBackgroundBrush` | 메인 창 배경. 단색 또는 이미지 |
+| 표면·패널 | `SurfaceBrush`, `BorderBrush` | 카드·목록·구분선 |
+| 버튼 | `RaisedBrush`, `AccentBrush` | 일반 버튼, 강조 버튼 (+ 각 Hover) |
+| 글자 | `TextBrush`, `MutedBrush` | 본문, 흐린 설명 |
+| 상태 | `OnlineBrush`, `OfflineBrush`, `WarningBrush` | 서버 상태 점, 경고 |
+| 패널 투명도 | `PanelOpacity` | `0.0`(투명) ~ `1.0`(불투명) |
+
+색은 `"#RRGGBB"` 또는 `"#AARRGGBB"` 형식입니다. 앞 두 자리(`AA`)가 불투명도라
+`#CC1A1E26` 처럼 쓰면 그 패널 너머로 배경이 비칩니다.
+
+**배경을 이미지로 바꾸려면** 이미지를 `CustomLauncher/Assets/Images/`에 넣고,
+`Appearance.axaml`에서 `WindowBackgroundBrush`의 `SolidColorBrush` 줄을 주석 처리한 뒤
+바로 아래 `ImageBrush` 블록의 주석을 풉니다.
+
+> 기본 글자색이 밝은 색(어두운 배경 기준)입니다. 밝은 배경 이미지를 쓰면 `TextBrush`·
+> `MutedBrush`를 어둡게 바꾸거나 `PanelOpacity`를 낮춰 가독성을 확보하세요.
+
 ---
 
 ## 3. 배포할 때마다 하는 일

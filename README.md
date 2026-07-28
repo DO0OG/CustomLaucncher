@@ -6,8 +6,8 @@
 
 ## 주요 기능
 
-- 시스템 브라우저 기반 Microsoft/Xbox 로그인(브라우저 불가 환경은 디바이스 코드로 폴백) 및
-  세션 복원
+- 시스템 브라우저 기반 Microsoft/Xbox 로그인(브라우저 불가 환경은 디바이스 코드로 폴백),
+  세션 복원, 계정 전환을 위한 로그아웃
 - OS 관례에 맞춘 설정·로그·게임 데이터 경로, 런처별 폴더 분리, 기존 설정 마이그레이션
 - 서버 상태·MOTD·접속자 수 표시와 장애 시 백오프
 - Java 탐색·검증·Adoptium 자동 설치, 시스템 메모리 기반 RAM 권장값, JVM 인자 관리
@@ -15,6 +15,7 @@
 - 필수/선택/드롭인 모드, 셰이더팩, 리소스팩 관리(드래그앤드롭 순서)
 - 멀티플레이 목록(`servers.dat`)에 서버 자동 등록(플레이어가 넣은 항목 보존)
 - 창으로 조작하는 배포 매니페스트 생성 도구
+- 색·배경·투명도를 한 파일(`Appearance.axaml`)에서 제어하는 외형 설정
 - Velopack 시작 훅과 OS별 self-contained 패키징 워크플로
 
 ## 빠른 시작 (운영자)
@@ -25,6 +26,7 @@
 1. `CustomLauncher/LauncherConfig.cs`에서 서버 이름·주소·버전·클라이언트 ID를 설정
 2. Microsoft 인증 앱 등록 ([AUTH_FLOW.ko.md](docs/AUTH_FLOW.ko.md))
 3. 배포 폴더를 서버에 올리고 매니페스트 도구로 `distribution.json` 생성
+4. (선택) `CustomLauncher/Appearance.axaml`에서 색·배경 이미지·투명도 조정
 
 ## 빌드 및 테스트
 
@@ -35,7 +37,7 @@ dotnet test    CustomLauncher/CustomLauncher.sln -c Release
 dotnet run --project CustomLauncher/CustomLauncher.csproj
 ```
 
-GitHub Actions가 Windows·macOS·Linux에서 빌드·테스트·포맷(138개 테스트)을 검증합니다.
+GitHub Actions가 Windows·macOS·Linux에서 빌드·테스트·포맷(140개 테스트)을 검증합니다.
 
 ## 매니페스트 도구
 

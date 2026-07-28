@@ -53,3 +53,21 @@ expired refresh token, or no network all just mean the sign-in button is shown, 
 
 The MSAL cache and the Minecraft account file are scoped by `LauncherConfig.LauncherId`, so separate
 server builds do not share credentials.
+
+## Signing out
+
+A **로그아웃** button sits next to the primary action while signed in. `SignOutAsync` clears **both**
+stores that make a session sticky:
+
+| Store | Cleared by | What it holds |
+|---|---|---|
+| `minecraft-accounts.json` | `JELoginHandler.Signout` | The Minecraft profile the launcher plays as |
+| `msal-token-cache.bin` (+ OS keychain entry) | `MsalClientHelper.RemoveAccounts` | The Microsoft account behind it |
+
+Clearing only the first would let the next sign-in silently restore the same Microsoft account, so a
+player could never switch accounts. Both are dropped and the cached login handlers are rebuilt, which
+is what makes the next sign-in start from account selection.
+
+If clearing fails or is cancelled part-way, the in-memory session is dropped anyway and the failure is
+reported on screen. Half-cleared credentials cannot be restored, and showing an account the launcher
+can no longer vouch for is worse than asking the player to sign in again.

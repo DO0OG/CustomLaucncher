@@ -1,0 +1,54 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- ============================================================================
+       런처 외형 제어 지점 — 이 파일의 값만 바꾸면 모든 창에 반영된다.
+       (LauncherConfig가 동작 설정이라면, 이 파일은 외형 설정이다.)
+
+       색 표기: "#RRGGBB" 또는 "#AARRGGBB".
+         앞 두 자리(AA)는 불투명도다. FF=불투명, 00=완전투명, CC≈80%.
+         패널을 반투명하게 해 배경 이미지가 비치게 하려면 표면 색에 AA를 붙인다.
+       ============================================================================ -->
+
+  <!-- ── 창 배경 ────────────────────────────────────────────────────────────────
+       기본은 단색. 배경을 이미지로 바꾸려면:
+         1) 이미지 파일을 CustomLauncher/Assets/Images/ 에 넣는다(예: background.png).
+         2) 아래 SolidColorBrush 한 줄을 주석 처리하고, ImageBrush 블록의 주석을 푼다.
+       메인 창(MainWindow)이 이 브러시를 배경으로 쓴다. 설정 창은 단색을 유지한다. -->
+  <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#12151B" />
+  <!--
+  <ImageBrush x:Key="WindowBackgroundBrush"
+              Source="avares://CustomLauncher/Assets/Images/background.png"
+              Stretch="UniformToFill" />
+  -->
+
+  <!-- ── 표면 / 패널 ────────────────────────────────────────────────────────────
+       배경 이미지를 쓸 때 패널을 반투명하게 하려면 아래 색 앞에 AA를 붙인다.
+       예: SurfaceBrush를 "#CC1A1E26" 으로. -->
+  <SolidColorBrush x:Key="WindowBrush" Color="#12151B" />
+  <Color x:Key="SurfaceColor">#171A21</Color>
+  <SolidColorBrush x:Key="SurfaceBrush" Color="#1A1E26" />
+  <SolidColorBrush x:Key="BorderBrush" Color="#2E3440" />
+
+  <!-- ── 버튼 ───────────────────────────────────────────────────────────────────
+       Raised = 일반 버튼 배경/호버. Accent = 주요(강조) 버튼 배경/호버. -->
+  <SolidColorBrush x:Key="RaisedBrush" Color="#232833" />
+  <SolidColorBrush x:Key="RaisedHoverBrush" Color="#2C323F" />
+  <SolidColorBrush x:Key="AccentBrush" Color="#3D7DFF" />
+  <SolidColorBrush x:Key="AccentHoverBrush" Color="#5691FF" />
+
+  <!-- ── 텍스트 ─────────────────────────────────────────────────────────────────
+       배경을 밝은 이미지로 바꾸면 이 두 색을 어둡게 조정해 가독성을 지킨다. -->
+  <SolidColorBrush x:Key="TextBrush" Color="#E7E9ED" />
+  <SolidColorBrush x:Key="MutedBrush" Color="#98A0AE" />
+
+  <!-- ── 상태 표시 ──────────────────────────────────────────────────────────────
+       서버 온라인/오프라인 점, 경고 문구 색. -->
+  <SolidColorBrush x:Key="OnlineBrush" Color="#5BC98D" />
+  <SolidColorBrush x:Key="OfflineBrush" Color="#7A828F" />
+  <SolidColorBrush x:Key="WarningBrush" Color="#E0A458" />
+
+  <!-- ── 패널 불투명도 (0.0 완전투명 ~ 1.0 불투명) ──────────────────────────────
+       카드(Border.card)와 목록(ListBox) 표면에 적용된다. 배경 이미지를 쓸 때
+       1.0보다 낮추면 그 패널들 너머로 배경이 비친다. -->
+  <x:Double x:Key="PanelOpacity">1.0</x:Double>
+</ResourceDictionary>

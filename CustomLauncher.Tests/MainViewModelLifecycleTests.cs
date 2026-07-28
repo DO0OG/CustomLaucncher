@@ -30,6 +30,63 @@ public sealed class MainViewModelLifecycleTests
         Assert.Contains("로그인", viewModel.Status);
     }
 
+    [Fact]
+    public async Task LogoutClearsSessionAndSwapsBackToTheSignInAction()
+    {
+        var home = Path.Combine(Path.GetTempPath(), $"launcher-logout-{Guid.NewGuid():N}");
+        var paths = new AppPaths(PlatformKind.Linux, home, new Dictionary<string, string?>());
+        var auth = new SignedInAuthService();
+        await using var viewModel = new MainViewModel(
+            paths, new AppSettingsManager(paths), new DebugLogger(paths), auth, new StubLauncherService());
+
+        await viewModel.LoginAsync();
+        Assert.True(viewModel.IsAuthenticated);
+
+        await viewModel.LogoutAsync();
+
+        Assert.Equal(1, auth.SignOutCalls);
+        Assert.False(viewModel.IsAuthenticated);
+        Assert.True(viewModel.IsSignedOut);
+        Assert.Equal("로그인하지 않음", viewModel.Account);
+        Assert.False(viewModel.Busy);
+    }
+
+    [Fact]
+    public async Task LogoutDropsTheSessionEvenWhenClearingCredentialsFails()
+    {
+        var home = Path.Combine(Path.GetTempPath(), $"launcher-logout-fail-{Guid.NewGuid():N}");
+        var paths = new AppPaths(PlatformKind.Linux, home, new Dictionary<string, string?>());
+        var auth = new SignedInAuthService { SignOutError = new InvalidOperationException("cache locked") };
+        await using var viewModel = new MainViewModel(
+            paths, new AppSettingsManager(paths), new DebugLogger(paths), auth, new StubLauncherService());
+
+        await viewModel.LoginAsync();
+        await viewModel.LogoutAsync();
+
+        // Staying "signed in" after a failed sign-out would show an account the launcher can no
+        // longer vouch for, so the session is dropped and the failure is surfaced instead.
+        Assert.True(viewModel.IsSignedOut);
+        Assert.Contains("오류", viewModel.Status);
+    }
+
+    private sealed class SignedInAuthService : IAuthService
+    {
+        public int SignOutCalls { get; private set; }
+        public Exception? SignOutError { get; init; }
+
+        public Task<MSession?> AuthenticateAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<MSession?>(new MSession("player", "token", Guid.NewGuid().ToString("N")));
+
+        public Task<MSession?> TryRestoreAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<MSession?>(null);
+
+        public Task SignOutAsync(CancellationToken cancellationToken = default)
+        {
+            SignOutCalls++;
+            return SignOutError is null ? Task.CompletedTask : Task.FromException(SignOutError);
+        }
+    }
+
     private sealed class BlockingAuthService : IAuthService
     {
         public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -48,6 +105,8 @@ public sealed class MainViewModelLifecycleTests
 
         public Task<MSession?> TryRestoreAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult<MSession?>(null);
+
+        public Task SignOutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
     private sealed class StubLauncherService : ILauncherService

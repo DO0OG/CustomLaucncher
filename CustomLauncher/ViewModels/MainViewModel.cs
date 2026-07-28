@@ -55,6 +55,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         _statusPolling = new ServerStatusPollingService(statusChecker.CheckAsync, () => WindowActive);
         _statusPolling.StatusChanged += OnServerStatusChanged;
         LoginCommand = new AsyncCommand(LoginAsync, () => !Busy && AuthConfigured);
+        LogoutCommand = new AsyncCommand(LogoutAsync, () => !Busy && _session is not null);
         LaunchCommand = new AsyncCommand(LaunchAsync, () => !Busy && _session is not null);
         CancelCommand = new RelayCommand(CancelCurrentOperation, () => Busy && _currentOperation is not null);
         OpenSettingsCommand = new RelayCommand(() => SettingsRequested?.Invoke(this, EventArgs.Empty));
@@ -62,6 +63,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
 
     public event EventHandler? SettingsRequested;
     public ICommand LoginCommand { get; }
+    public ICommand LogoutCommand { get; }
     public ICommand LaunchCommand { get; }
     public ICommand CancelCommand { get; }
     public ICommand OpenSettingsCommand { get; }
@@ -202,6 +204,42 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         }
     }
 
+    public async Task LogoutAsync()
+    {
+        if (_session is null || Busy) return;
+        using var operation = BeginOperation();
+        Busy = true;
+        Status = "로그아웃하는 중...";
+        try
+        {
+            await _auth.SignOutAsync(operation.Token);
+            Status = "로그아웃했습니다.";
+        }
+        catch (OperationCanceledException) when (operation.IsCancellationRequested)
+        {
+            // Half-cleared credentials cannot be restored, so the session is dropped regardless.
+            // Reporting a plain "cancelled" here would imply the user is still signed in.
+            Status = "로그아웃을 중단했지만 계정 연결은 해제했습니다. 다시 로그인해 주세요.";
+        }
+        catch (Exception exception)
+        {
+            // The cached credentials may survive, so say so rather than claiming a clean sign-out.
+            Status = "로그아웃 중 오류가 발생했습니다. 로그를 확인해 주세요.";
+            await _logger.WriteAsync(LauncherLogLevel.Error, "Sign-out failed", exception);
+        }
+        finally
+        {
+            // The in-memory session is dropped either way: leaving the launcher showing a signed-in
+            // account it can no longer vouch for is worse than forcing another sign-in.
+            _session = null;
+            Account = "로그인하지 않음";
+            _discord?.SetState(DiscordPresenceState.LauncherOpen);
+            NotifyAuthState();
+            EndOperation(operation);
+            Busy = false;
+        }
+    }
+
     public async Task LaunchAsync()
     {
         if (_session is null || Busy) return;
@@ -301,6 +339,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     private void NotifyCommandStates()
     {
         ((AsyncCommand)LoginCommand).NotifyCanExecuteChanged();
+        ((AsyncCommand)LogoutCommand).NotifyCanExecuteChanged();
         ((AsyncCommand)LaunchCommand).NotifyCanExecuteChanged();
         ((RelayCommand)CancelCommand).NotifyCanExecuteChanged();
     }

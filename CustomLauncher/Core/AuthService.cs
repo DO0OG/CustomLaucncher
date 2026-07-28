@@ -13,6 +13,11 @@ public interface IAuthService
 {
     Task<MSession?> AuthenticateAsync(CancellationToken cancellationToken = default);
     Task<MSession?> TryRestoreAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Forgets the signed-in account so the next sign-in starts from account selection.
+    /// </summary>
+    Task SignOutAsync(CancellationToken cancellationToken = default);
 }
 
 public sealed class AuthService : IAuthService
@@ -75,6 +80,24 @@ public sealed class AuthService : IAuthService
             // must never be reported as a startup error.
             return null;
         }
+    }
+
+    /// <summary>
+    /// Clears both stores that make a sign-in "sticky": the Minecraft account file and the MSAL
+    /// token cache. Dropping only the first would let the next sign-in restore the same Microsoft
+    /// account silently, so the user could never switch accounts.
+    /// </summary>
+    public async Task SignOutAsync(CancellationToken cancellationToken = default)
+    {
+        if (!IsConfigured) return;
+
+        var browser = await GetBrowserHandlerAsync();
+        await browser.Signout(cancellationToken);
+        await MsalClientHelper.RemoveAccounts(await _application.Value);
+
+        // The handlers cache the account they signed in with; rebuild them on the next attempt.
+        _browserHandler = null;
+        _deviceCodeHandler = null;
     }
 
     /// <summary>

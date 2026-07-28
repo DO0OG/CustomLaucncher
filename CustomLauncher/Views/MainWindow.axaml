@@ -3,7 +3,7 @@
         x:Class="CustomLauncher.Views.MainWindow"
         Width="880" Height="560" MinWidth="720" MinHeight="500"
         Title="CustomLauncher"
-        Background="{StaticResource WindowBrush}"
+        Background="{StaticResource WindowBackgroundBrush}"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaTitleBarHeightHint="44">
@@ -89,6 +89,9 @@
           <Button Content="취소" Command="{Binding CancelCommand}" IsVisible="{Binding Busy}" />
           <Button Classes="accent" Content="Microsoft 로그인" Command="{Binding LoginCommand}"
                   IsVisible="{Binding IsSignedOut}" />
+          <!-- Secondary next to the primary action: signing out is deliberate, not the default. -->
+          <Button Content="로그아웃" Command="{Binding LogoutCommand}"
+                  IsVisible="{Binding IsAuthenticated}" />
           <Button Classes="accent" Content="게임 시작" Command="{Binding LaunchCommand}"
                   IsVisible="{Binding IsAuthenticated}" />
         </StackPanel>

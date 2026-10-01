@@ -38,7 +38,14 @@ jobs:
         shell: bash
         run: |
           yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platform-tools" "platforms;android-37" "build-tools;37.0.0"
+          sdkmanager --list --channel=3 > /tmp/sdk-list.txt
+          PLATFORM="$(awk -F'|' '/platforms;android-37/ {gsub(/^[ 	]+|[ 	]+$/, "", $1); print $1; exit}' /tmp/sdk-list.txt)"
+          BUILD_TOOLS="$(awk -F'|' '/build-tools;37./ {gsub(/^[ 	]+|[ 	]+$/, "", $1); print $1}' /tmp/sdk-list.txt | sort -V | tail -1)"
+          echo "Platform: $PLATFORM"
+          echo "Build tools: $BUILD_TOOLS"
+          test -n "$PLATFORM"
+          test -n "$BUILD_TOOLS"
+          sdkmanager --channel=3 "platform-tools" "$PLATFORM" "$BUILD_TOOLS"
 
       - name: Set up Gradle 8.13
         uses: gradle/actions/setup-gradle@v4

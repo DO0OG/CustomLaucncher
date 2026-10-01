@@ -1,0 +1,61 @@
+name: Temporary MorningKeepAlive APK build
+
+on:
+  push:
+    branches:
+      - tmp-morning-apk-build-20261002
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reconstruct source
+        shell: bash
+        run: |
+          cat .tmp/morning-src/part* > /tmp/morning.b64
+          base64 --decode /tmp/morning.b64 > /tmp/MorningKeepAlive-source.zip
+          unzip -t /tmp/MorningKeepAlive-source.zip
+          mkdir -p /tmp/morning-src
+          unzip -q /tmp/MorningKeepAlive-source.zip -d /tmp/morning-src
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android API 37
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "platforms;android-37" "build-tools;37.0.0"
+
+      - name: Set up Gradle 8.13
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: Build APK
+        working-directory: /tmp/morning-src/MorningKeepAlive
+        run: gradle :app:assembleDebug --stacktrace
+
+      - name: Prepare artifact
+        shell: bash
+        run: |
+          cp /tmp/morning-src/MorningKeepAlive/app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/MorningKeepAlive-v0.4.0.apk"
+          ls -lh "$GITHUB_WORKSPACE/MorningKeepAlive-v0.4.0.apk"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MorningKeepAlive-v0.4.0
+          path: MorningKeepAlive-v0.4.0.apk
+          if-no-files-found: error

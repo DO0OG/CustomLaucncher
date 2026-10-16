@@ -53,6 +53,8 @@ jobs:
           print('non-utf8 files:',bad)
           PY
           locale; echo "LANG=$LANG"; git config --get core.autocrlf || true
+      - name: Image java properties (temporary diagnostic)
+        run: docker run --rm --entrypoint java codacy/codacy-analysis-cli:4.0.0 -XshowSettings:properties -version 2>&1 | grep -E 'encoding|java.version' || true
       - name: Codacy JSON run (temporary diagnostic)
         continue-on-error: true
         run: |
@@ -78,6 +80,7 @@ jobs:
                   for v in o: walk(v)
           walk(data)
           print('files with results:',len(names))
+          for n in sorted(names): print('RESULT FILE:',n)
           for n in sorted(names):
               try: open(n,'rb').read().decode('utf-8')
               except FileNotFoundError: print('MISSING:',n)

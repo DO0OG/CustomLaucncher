@@ -278,7 +278,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         {
             AvailableUpdateVersion = await _updates.CheckAsync(_settings.IncludePrereleases, _lifetime.Token);
         }
-        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { /* 런처 종료 중 취소된 작업은 무시합니다. */ }
         catch (Exception exception)
         {
             await _logger.WriteAsync(LauncherLogLevel.Warn, "Update check failed", exception);

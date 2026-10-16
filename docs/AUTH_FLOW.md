@@ -56,18 +56,42 @@ server builds do not share credentials.
 
 ## Signing out
 
-A **로그아웃** button sits next to the primary action while signed in. `SignOutAsync` clears **both**
-stores that make a session sticky:
+A **이 계정 로그아웃** button sits next to the primary action while signed in. `SignOutAccountAsync`
+clears **both** stores that keep the selected account signed in:
 
 | Store | Cleared by | What it holds |
 |---|---|---|
-| `minecraft-accounts.json` | `JELoginHandler.Signout` | The Minecraft profile the launcher plays as |
-| `msal-token-cache.bin` (+ OS keychain entry) | `MsalClientHelper.RemoveAccounts` | The Microsoft account behind it |
+| `minecraft-accounts.json` | `JELoginHandler.Signout(account)` | The Minecraft profile the launcher plays as |
+| `msal-token-cache.bin` (+ OS keychain entry) | `IPublicClientApplication.RemoveAsync(account)` | The Microsoft account behind it |
 
-Clearing only the first would let the next sign-in silently restore the same Microsoft account, so a
-player could never switch accounts. Both are dropped and the cached login handlers are rebuilt, which
-is what makes the next sign-in start from account selection.
+Clearing only the first would let the next sign-in silently restore the same Microsoft account.
+Other accounts are left in place.
+
+The full `SignOutAsync`, used only when the selected account is not known, instead calls
+`JELoginHandler.Signout`, empties the account file and removes every MSAL account with
+`MsalClientHelper.RemoveAccounts`. It also drops the cached login handlers so they are rebuilt on the next attempt.
 
 If clearing fails or is cancelled part-way, the in-memory session is dropped anyway and the failure is
 reported on screen. Half-cleared credentials cannot be restored, and showing an account the launcher
 can no longer vouch for is worse than asking the player to sign in again.
+
+## Multiple accounts
+
+The MSAL cache can hold several Microsoft accounts, and the launcher remembers all of them. Once there
+are two or more, the main window shows an account picker. Each account is labelled with its Minecraft
+profile name, or with its Microsoft account name when it has no profile yet.
+
+- Choosing an account switches to it and saves the choice as `SelectedAccountId`. Switching is refused
+  while the game is being prepared or running.
+- The next start restores the saved account. If that account is gone, the first remaining account is
+  used; if no account remains, the launcher shows the signed-out state.
+- **Add account** opens the browser's account chooser (`prompt=select_account`), so a new account can
+  sign in while existing accounts are kept. If no browser can be launched, it falls back to the
+  device-code flow. The sign-in button also opens the account chooser.
+- **Sign out of this account** removes only the selected account from the MSAL cache and from
+  `minecraft-accounts.json`. If other accounts remain, the first of them becomes active; otherwise the
+  launcher is signed out.
+
+Account identifiers, email addresses and tokens are not written to logs or status text, and automated
+tests check this. Adding, switching and signing out two real Microsoft accounts is not automated and
+must be checked by hand.

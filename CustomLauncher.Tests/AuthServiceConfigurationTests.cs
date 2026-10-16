@@ -42,6 +42,25 @@ public sealed class AuthServiceConfigurationTests : IDisposable
         Assert.Null(await CreateService("").TryRestoreAsync());
     }
 
+    [Fact]
+    public async Task AnUnconfiguredClientIdHasNoAccountsAndNothingToRestoreOrSignOut()
+    {
+        var service = CreateService("");
+
+        Assert.Empty(await service.GetAccountsAsync());
+        Assert.Null(await service.RestoreAccountAsync("fake-home-id-1"));
+        await service.SignOutAccountAsync("fake-home-id-1");
+    }
+
+    [Fact]
+    public async Task AnUnconfiguredClientIdFailsAddingAnAccountClearly()
+    {
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => CreateService("").AddAccountAsync());
+
+        Assert.Contains("MicrosoftClientId", error.Message, StringComparison.Ordinal);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_root)) Directory.Delete(_root, true);

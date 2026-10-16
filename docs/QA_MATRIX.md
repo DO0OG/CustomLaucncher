@@ -29,6 +29,15 @@ Linux for every pull request. The suite is 151 tests covering:
   still dropped when clearing the cached credentials throws.
 - Sign-out: the session is cleared and the primary action swaps back to sign-in, and the session is
   still dropped when clearing the cached credentials throws.
+- Multiple accounts: the account picker appears only with two or more accounts, choosing one switches
+  and persists `SelectedAccountId`, and the saved account is restored with fallback to the first account
+  (`CustomLauncher.Tests/AuthAccountTests.cs`, `MainViewModelLifecycleTests.cs`).
+- Per-account sign-out: with a fake auth service, the selected account's id is passed to the individual
+  sign-out call, the first remaining account becomes active and is saved, and the signed-out state is
+  shown when no account remains (`CustomLauncher.Tests/MainViewModelLifecycleTests.cs`). Real MSAL cache
+  and account file deletion is not covered by this test; see "Not covered by automation".
+- Privacy: account identifiers, email addresses and tokens do not appear in logs or status text
+  (`CustomLauncher.Tests/AuthAccountTests.cs`, `MainViewModelLifecycleTests.cs`).
 - Progress status text (`게임 파일 설치 3/10 파일, 5.0/20.0 MB` form and the file-only variant).
 - Non-zero exit message with the newest crash-report and log paths.
 - Close-launcher-after-start request, and persistence of the `FullScreen` and `CloseLauncherOnGameStart` settings.
@@ -51,6 +60,9 @@ These are isolated tests with fakes and temporary files; they are not end-to-end
 Drag-and-drop reordering of resource packs is driven by pointer and `DragDrop` events and is only
 exercised by hand. The ▲▼ buttons call the same `MoveToAsync` entry point, which is unit tested, so
 the ordering rules are covered even though the gesture is not.
+
+Adding, switching and signing out two real Microsoft accounts, including deletion of the real MSAL cache
+and `minecraft-accounts.json`, is not automated and must be checked by hand.
 
 Real NeoForge and Quilt installation, and status checks against a live server over SLP, are not
 automated.

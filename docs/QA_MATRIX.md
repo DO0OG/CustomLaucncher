@@ -12,8 +12,13 @@ Linux for every pull request. The suite is 151 tests covering:
 - Manifest validation and staged updates: HTTPS, SHA-256 re-check, archive path traversal, archive
   limits, cancellation, and drop-in preservation.
 - Mod-loader selection, Java discovery/validation/factory policy, and RAM policy from `RamCalculator`.
+- Quilt and NeoForge install branches with a fake backend, including reuse of an installed version
+  (a NeoForge `21.1.10` request does not reuse an installed `21.1.100`).
 - Server status parsing and backoff; the multiplayer-list (`servers.dat`) writer, including modified
   UTF-8 round-tripping and merge preservation.
+- Server List Ping (SLP): VarInt and handshake encoding, a round trip against a local fake server,
+  parsing of both description forms (plain string and component object), offline conversion for
+  timeout, closed port, and oversized responses, and fallback to SLP when `statusUrl` fails.
 - `options.txt` targeted editing and resource-pack ordering.
 - Content tab behaviour: every `OptionsEditStatus` branch reaches the user, a required server pack
   refuses to move/disable with a message instead of throwing, optional-module toggles cascade to
@@ -46,6 +51,9 @@ These are isolated tests with fakes and temporary files; they are not end-to-end
 Drag-and-drop reordering of resource packs is driven by pointer and `DragDrop` events and is only
 exercised by hand. The ▲▼ buttons call the same `MoveToAsync` entry point, which is unit tested, so
 the ordering rules are covered even though the gesture is not.
+
+Real NeoForge and Quilt installation, and status checks against a live server over SLP, are not
+automated.
 
 ## Manual release gates
 

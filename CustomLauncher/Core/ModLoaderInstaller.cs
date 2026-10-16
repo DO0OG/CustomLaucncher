@@ -1,6 +1,9 @@
 using CmlLib.Core;
 using CmlLib.Core.Installer.Forge;
+using CmlLib.Core.Installer.NeoForge;
+using CmlLib.Core.Installer.NeoForge.Installers;
 using CmlLib.Core.ModLoaders.FabricMC;
+using CmlLib.Core.ModLoaders.QuiltMC;
 using CmlLib.Core.VersionMetadata;
 using CustomLauncher.Shared.Models;
 
@@ -18,6 +21,11 @@ public interface IModLoaderBackend
     Task<string> InstallForgeAsync(string minecraftVersion, string forgeVersion,
         IProgress<LaunchProgress>? progress, CancellationToken cancellationToken);
     Task<string> InstallFabricAsync(string minecraftVersion, string fabricVersion,
+        IProgress<LaunchProgress>? progress, CancellationToken cancellationToken);
+    string GetQuiltVersionName(string minecraftVersion, string quiltVersion);
+    Task<string> InstallQuiltAsync(string minecraftVersion, string quiltVersion,
+        IProgress<LaunchProgress>? progress, CancellationToken cancellationToken);
+    Task<string> InstallNeoForgeAsync(string minecraftVersion, string neoForgeVersion,
         IProgress<LaunchProgress>? progress, CancellationToken cancellationToken);
 }
 
@@ -50,6 +58,7 @@ public sealed class ModLoaderInstaller(IModLoaderBackend backend) : IModLoaderIn
                 {
                     var existing = installed.FirstOrDefault(name =>
                         name.Contains("forge", StringComparison.OrdinalIgnoreCase) &&
+                        !name.Contains("neoforge", StringComparison.OrdinalIgnoreCase) &&
                         name.Contains(configuration.MinecraftVersion, StringComparison.OrdinalIgnoreCase) &&
                         name.Contains(configuration.ForgeVersion, StringComparison.OrdinalIgnoreCase));
                     if (existing is not null) return existing;
@@ -65,6 +74,25 @@ public sealed class ModLoaderInstaller(IModLoaderBackend backend) : IModLoaderIn
                     progress?.Report(new LaunchProgress("Fabric 설치", 0));
                     return await backend.InstallFabricAsync(
                         configuration.MinecraftVersion, configuration.FabricVersion, progress, cancellationToken);
+                }
+            case "quilt":
+                {
+                    var expected = backend.GetQuiltVersionName(
+                        configuration.MinecraftVersion, configuration.FabricVersion);
+                    if (installed.Contains(expected, StringComparer.OrdinalIgnoreCase)) return expected;
+                    progress?.Report(new LaunchProgress("Quilt 설치", 0));
+                    return await backend.InstallQuiltAsync(
+                        configuration.MinecraftVersion, configuration.FabricVersion, progress, cancellationToken);
+                }
+            case "neoforge":
+                {
+                    var existing = installed.FirstOrDefault(name =>
+                        name.Contains("neoforge", StringComparison.OrdinalIgnoreCase) &&
+                        name.EndsWith(configuration.ForgeVersion, StringComparison.OrdinalIgnoreCase));
+                    if (existing is not null) return existing;
+                    progress?.Report(new LaunchProgress("NeoForge 설치", 0));
+                    return await backend.InstallNeoForgeAsync(
+                        configuration.MinecraftVersion, configuration.ForgeVersion, progress, cancellationToken);
                 }
             default:
                 throw new InvalidOperationException($"지원하지 않는 모드 로더입니다: {configuration.Type}");
@@ -110,5 +138,34 @@ public sealed class CmlModLoaderBackend(
         cancellationToken.ThrowIfCancellationRequested();
         progress?.Report(new LaunchProgress("Fabric 설치", 1));
         return result;
+    }
+
+    public string GetQuiltVersionName(string minecraftVersion, string quiltVersion) =>
+        QuiltInstaller.GetVersionName(minecraftVersion, quiltVersion);
+
+    public async Task<string> InstallQuiltAsync(string minecraftVersion, string quiltVersion,
+        IProgress<LaunchProgress>? progress, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var result = await new QuiltInstaller(httpClient).Install(minecraftVersion, quiltVersion, minecraftPath);
+        cancellationToken.ThrowIfCancellationRequested();
+        progress?.Report(new LaunchProgress("Quilt 설치", 1));
+        return result;
+    }
+
+    public Task<string> InstallNeoForgeAsync(string minecraftVersion, string neoForgeVersion,
+        IProgress<LaunchProgress>? progress, CancellationToken cancellationToken)
+    {
+        var options = new NeoForgeInstallOptions
+        {
+            CancellationToken = cancellationToken,
+            FileProgress = new Progress<CmlLib.Core.Installers.InstallerProgressChangedEventArgs>(value =>
+                progress?.Report(new LaunchProgress("NeoForge 설치", value.ProgressedTasks / (double)Math.Max(1, value.TotalTasks), value.Name))),
+            ByteProgress = new Progress<ByteProgress>(value =>
+                progress?.Report(new LaunchProgress("NeoForge 설치", value.ToRatio()))),
+            InstallerOutput = new Progress<string>(line =>
+                progress?.Report(new LaunchProgress("NeoForge 설치", 0.9, line))),
+        };
+        return new NeoForgeInstaller(launcher).Install(minecraftVersion, neoForgeVersion, options);
     }
 }

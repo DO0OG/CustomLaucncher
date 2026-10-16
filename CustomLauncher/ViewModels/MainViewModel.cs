@@ -27,7 +27,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     private IDiscordPresenceService? _discord;
     private ProcessWrapper? _gameProcessWrapper;
     private Process? _gameProcess;
-    private readonly Func<string?, CancellationToken, Task<ServerStatusInfo>> _checkStatus;
+    private readonly Func<ServerEntry?, CancellationToken, Task<ServerStatusInfo>> _checkStatus;
     private IReadOnlyList<ServerEntry> _servers = [];
     private ServerEntry? _selectedServer;
     private int _statusGeneration;
@@ -52,7 +52,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         IAuthService auth,
         ILauncherService launcher,
         Func<string, IContentUpdateService>? contentFactory = null,
-        Func<string?, CancellationToken, Task<ServerStatusInfo>>? checkStatus = null)
+        Func<ServerEntry?, CancellationToken, Task<ServerStatusInfo>>? checkStatus = null)
     {
         _paths = paths;
         _settingsManager = settingsManager;
@@ -64,9 +64,14 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         _contentHttpClient = new HttpClient();
         _contentHttpClient.DefaultRequestHeaders.UserAgent.ParseAdd(LauncherConfig.UserAgent);
         _contentFactory = contentFactory ?? (path => new ContentUpdateService(_contentHttpClient, path));
-        _checkStatus = checkStatus ?? ((url, token) => new ServerStatusChecker(_statusHttpClient, url).CheckAsync(token));
+        _checkStatus = checkStatus ?? ((server, token) =>
+        {
+            server ??= LauncherServers.Legacy;
+            return new ServerStatusChecker(_statusHttpClient, server.StatusUrl, logger: _logger)
+                .CheckAsync(server.Address, server.Port, token);
+        });
         _statusPolling = new ServerStatusPollingService(
-            token => _checkStatus(_selectedServer?.StatusUrl, token), () => WindowActive);
+            token => _checkStatus(_selectedServer, token), () => WindowActive);
         _statusPolling.StatusChanged += OnServerStatusChanged;
         LoginCommand = new AsyncCommand(LoginAsync, () => !Busy && AuthConfigured);
         LogoutCommand = new AsyncCommand(LogoutAsync, () => !Busy && _session is not null);
@@ -510,8 +515,9 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     private void ApplyServerStatus(ServerStatusInfo status)
     {
         ServerOnline = status.RequestSucceeded && status.IsOnline;
+        var ping = status.PingMilliseconds is { } milliseconds ? $" · {milliseconds}ms" : string.Empty;
         ServerStatus = status.RequestSucceeded
-            ? status.IsOnline ? $"온라인 · {status.OnlinePlayers ?? 0}/{status.MaxPlayers ?? 0}명" : "오프라인"
+            ? status.IsOnline ? $"온라인 · {status.OnlinePlayers ?? 0}/{status.MaxPlayers ?? 0}명{ping}" : "오프라인"
             : "상태 확인 불가";
         ServerMotd = status.Motd;
     }

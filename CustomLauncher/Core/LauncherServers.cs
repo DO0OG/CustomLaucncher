@@ -15,6 +15,7 @@ public static class LauncherServers
         Address = LauncherConfig.ServerIp,
         Port = LauncherConfig.ServerPort,
         MinecraftVersion = LauncherConfig.McVersion,
+        StatusUrl = LauncherConfig.ServerStatusApiUrl,
         ModLoader = new ModLoaderSpec
         {
             Type = LauncherConfig.ModLoaderType == "none" ? "vanilla" : LauncherConfig.ModLoaderType.ToLowerInvariant(),

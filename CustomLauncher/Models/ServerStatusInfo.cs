@@ -14,6 +14,10 @@ public sealed class ServerStatusInfo
 
     public string Motd { get; init; } = string.Empty;
 
+    public long? PingMilliseconds { get; init; }
+
+    public string? VersionName { get; init; }
+
     public string? ErrorMessage { get; init; }
 
     public static ServerStatusInfo Unavailable(string? errorMessage = null) => new()

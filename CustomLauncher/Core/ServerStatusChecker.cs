@@ -6,25 +6,28 @@ namespace CustomLauncher.Core;
 
 public sealed class ServerStatusChecker
 {
-    private const int MaxMotdLength = 240;
-    private const int MaxDisplayedPlayers = 50;
-    private const int MaxPlayerNameLength = 64;
+    internal const int MaxMotdLength = 240;
+    internal const int MaxDisplayedPlayers = 50;
+    internal const int MaxPlayerNameLength = 64;
     private static readonly Regex MinecraftFormattingCode =
         new("§[0-9A-FK-OR]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex UnsafeControlCharacters =
         new("[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]", RegexOptions.Compiled);
 
     private readonly HttpClient httpClient;
-    private readonly string statusApiUrl;
+    private readonly string? statusApiUrl;
     private readonly TimeSpan requestTimeout;
+    private readonly DebugLogger? logger;
 
     public ServerStatusChecker(
         HttpClient httpClient,
         string? statusApiUrl = null,
-        TimeSpan? requestTimeout = null)
+        TimeSpan? requestTimeout = null,
+        DebugLogger? logger = null)
     {
         this.httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-        this.statusApiUrl = statusApiUrl ?? LauncherConfig.ServerStatusApiUrl;
+        this.statusApiUrl = statusApiUrl;
+        this.logger = logger;
         this.requestTimeout = requestTimeout ?? TimeSpan.FromSeconds(15);
 
         if (this.requestTimeout <= TimeSpan.Zero || this.requestTimeout >= TimeSpan.FromMinutes(1))
@@ -33,13 +36,29 @@ public sealed class ServerStatusChecker
         }
     }
 
-    public async Task<ServerStatusInfo> CheckAsync(CancellationToken cancellationToken = default)
+    /// <summary>Tries the HTTP status API when one is configured, then pings the server directly.</summary>
+    public async Task<ServerStatusInfo> CheckAsync(string address, int port, CancellationToken cancellationToken = default)
+    {
+        if (!string.IsNullOrWhiteSpace(statusApiUrl))
+        {
+            var http = await CheckHttpAsync(statusApiUrl, cancellationToken).ConfigureAwait(false);
+            if (http.RequestSucceeded)
+            {
+                return http;
+            }
+        }
+
+        return await MinecraftServerPing.QueryAsync(address, port, logger: logger, cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    private async Task<ServerStatusInfo> CheckHttpAsync(string url, CancellationToken cancellationToken)
     {
         try
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeout.CancelAfter(requestTimeout);
-            using var request = new HttpRequestMessage(HttpMethod.Get, statusApiUrl);
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.UserAgent.ParseAdd(LauncherConfig.UserAgent);
             using var response = await httpClient.SendAsync(
                 request,
@@ -57,6 +76,11 @@ public sealed class ServerStatusChecker
         catch (Exception exception) when (
             exception is HttpRequestException or OperationCanceledException or JsonException or InvalidOperationException)
         {
+            if (logger is not null)
+            {
+                await logger.WriteAsync(LauncherLogLevel.Warn, "HTTP server status request failed", exception).ConfigureAwait(false);
+            }
+
             return ServerStatusInfo.Unavailable(exception.Message);
         }
     }
@@ -132,14 +156,14 @@ public sealed class ServerStatusChecker
         };
     }
 
-    private static int? ReadNonNegativeInt(JsonElement parent, string propertyName)
+    internal static int? ReadNonNegativeInt(JsonElement parent, string propertyName)
     {
         return parent.TryGetProperty(propertyName, out var value) && value.TryGetInt32(out var parsed) && parsed >= 0
             ? parsed
             : null;
     }
 
-    private static string Sanitize(string? value, int maxLength)
+    internal static string Sanitize(string? value, int maxLength)
     {
         var sanitized = UnsafeControlCharacters.Replace(MinecraftFormattingCode.Replace(value ?? string.Empty, string.Empty), string.Empty);
         return sanitized.Length <= maxLength ? sanitized : sanitized[..maxLength];

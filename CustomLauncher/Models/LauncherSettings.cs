@@ -13,6 +13,8 @@ public sealed class LauncherSettings
     public bool DiscordRpcEnabled { get; set; }
     public bool FullScreen { get; set; }
     public bool CloseLauncherOnGameStart { get; set; }
+    public bool CheckForUpdates { get; set; } = true;
+    public bool IncludePrereleases { get; set; }
     public string? SelectedShaderPackId { get; set; }
     public List<string> EnabledResourcePacks { get; set; } = [];
 

@@ -5,7 +5,7 @@ Korean version: [QA_MATRIX.ko.md](QA_MATRIX.ko.md)
 ## Automated evidence
 
 CI runs restore, build, unit tests, and `dotnet format --verify-no-changes` on Windows, macOS, and
-Linux for every pull request. The suite is 151 tests covering:
+Linux for every pull request. The suite is 282 tests covering:
 
 - Path mapping/migration and per-launcher directory scoping.
 - Settings transactions (validate-before-mutate, atomic write, schema version).
@@ -25,8 +25,6 @@ Linux for every pull request. The suite is 151 tests covering:
   submodules and persist, and a manifest fetch failure becomes a message not an unhandled fault.
 - Auth error mapping: the 403 that Minecraft returns is recognised whether the library fills
   `StatusCode` or only the message.
-- Sign-out: the session is cleared and the primary action swaps back to sign-in, and the session is
-  still dropped when clearing the cached credentials throws.
 - Sign-out: the session is cleared and the primary action swaps back to sign-in, and the session is
   still dropped when clearing the cached credentials throws.
 - Multiple accounts: the account picker appears only with two or more accounts, choosing one switches
@@ -98,6 +96,16 @@ automated.
 | File verification and repair: after one file is tampered with or deleted, the button re-downloads only that file, shows "verified n, repaired m", and keeps existing files when the network is blocked | Required | Required | Required |
 | Archive module: an existing install with no record re-downloads once on first run | Required | Required | Required |
 | Game log area: shows output while running (latest 500 lines), window stays responsive under heavy output, and "Open log folder" opens the `logs` folder in the OS file explorer | Required | Required | Required |
+| Auto-update, dev run or `dotnet publish` output run as-is: the update check is skipped and logged | Required | Required | Required |
+| Auto-update, installed build or Portable.zip: the "new version x.y.z" banner and "Update now" button appear on the main window | Required | Required | Required |
+| Auto-update: "Update now" is disabled while a task (launch, repair) is running | Required | Required | Required |
+| Auto-update: applying is blocked with a notice while the game is running | Required | Required | Required |
+| Auto-update: download progress shows in the progress bar and status line, and the launcher restarts after applying | Required | Required | Required |
+| Auto-update: "Include prereleases" off ignores a prerelease, on receives it | Required | Required | Required |
+| Auto-update: a network failure is ignored silently and written to the log only | Required | Required | Required |
+| Auto-update: the info window shows the current version | Required | Required | Required |
+| Unsigned installer: Windows SmartScreen warning appears and "More info → Run" installs | Required | N/A | N/A |
+| Unsigned installer: macOS Gatekeeper warning appears and right-click → Open launches | N/A | Required | N/A |
 
 Public release still needs the real distribution endpoint filled in, target-OS machines, and
 signing credentials (Windows certificate, Apple Developer signing/notarization). Shader settings must

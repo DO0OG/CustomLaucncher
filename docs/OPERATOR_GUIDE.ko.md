@@ -369,3 +369,36 @@ NeoForge와 Quilt는 매니페스트 `servers` 항목의 `modLoader`로 지정�
 `servers` 배열의 서버는 `statusUrl`을 적지 않으면 런처에 빌드된 기본 상태 API를 쓰지 않고 SLP로 확인합니다. 레거시 단일 서버(`servers` 배열이 없는 옛 매니페스트)는 기존처럼 기본 상태 API를 먼저 씁니다.
 
 방화벽이 서버 포트로의 직접 연결을 막는 환경이면 해당 서버에 `statusUrl`을 지정하세요.
+
+---
+
+## 10. 런처 릴리스와 자동 업데이트
+
+매니페스트 배포(3장)와 별개로, 런처 프로그램 자체를 새 버전으로 내보내는 절차입니다.
+런처는 GitHub Releases를 자동 업데이트 피드로 씁니다. 별도 서버나 비용은 없습니다.
+
+### 10-1. 워크플로 실행
+
+1. GitHub 저장소의 **Actions → Package release** 워크플로를 엽니다.
+2. **Run workflow**에서 `version`(SemVer)을 입력합니다.
+   - 정식 릴리스: `2.1.0`
+   - 프리릴리스: `2.1.0-beta.1` (`-`가 있으면 GitHub 프리릴리스로 올라갑니다)
+3. 워크플로가 다음 순서로 진행합니다.
+   - CI 검증
+   - OS별 `dotnet publish -p:Version=<version>` (win-x64, linux-x64, osx-x64, osx-arm64)
+   - `vpk pack`(Velopack CLI 1.2.0)으로 설치 패키지 생성
+   - 마지막 잡에서 `vpk upload github`로 태그 `v<version>`, 릴리스 이름 `v<version>`의 GitHub Release에 자산을 올리고 공개
+
+워크플로는 `contents: write` 권한으로 기본 `GITHUB_TOKEN`을 씁니다. 별도 비밀값은 필요 없습니다.
+
+### 10-2. 런처가 받는 방식
+
+- 채널은 OS별로 `win`, `linux`, `osx-x64`, `osx-arm64`입니다. 런처는 설치된 패키지의 채널을 따르므로 운영자가 따로 지정하지 않습니다.
+- 정식 릴리스는 모든 런처가 받습니다.
+- 프리릴리스는 설정 창에서 **프리릴리스 포함**을 켠 런처만 받습니다.
+
+### 10-3. 서명
+
+코드 서명은 아직 하지 않습니다. 워크플로는 서명이 없다는 경고만 출력합니다.
+그래서 플레이어에게 설치 파일 경고(Windows SmartScreen, macOS Gatekeeper)를 안내해야 합니다.
+안내 문구는 [README](../README.md)의 "자동 업데이트" 절을 참고하세요.

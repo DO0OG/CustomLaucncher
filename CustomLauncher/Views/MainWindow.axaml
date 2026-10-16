@@ -26,6 +26,14 @@
     <!-- Body: one centred column. Everything that matters reads top to bottom. -->
     <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
                 Spacing="18" Margin="40,0" MaxWidth="520">
+      <!-- Only on screen once the startup check found a newer version. -->
+      <Border Classes="card" IsVisible="{Binding HasUpdate}">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Grid.Column="0" Text="{Binding UpdateBannerText}" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Classes="accent" Content="지금 업데이트" Command="{Binding UpdateCommand}" />
+        </Grid>
+      </Border>
+
       <Image Source="avares://CustomLauncher/Assets/Images/logo.png"
              Height="132" Stretch="Uniform" HorizontalAlignment="Center" />
 
@@ -88,7 +96,7 @@
     <!-- Collapsed by default; expands inside the window instead of opening a new one. -->
     <Expander Grid.Row="2" Header="게임 로그" IsExpanded="False" Margin="20,0,20,8">
       <StackPanel Spacing="8">
-        <TextBox Text="{Binding GameLog, Mode=OneWay}" IsReadOnly="True" Classes="mono"
+        <TextBox x:Name="GameLogBox" Text="{Binding GameLog, Mode=OneWay}" IsReadOnly="True" Classes="mono"
                  TextWrapping="Wrap" MaxHeight="180" AcceptsReturn="True"
                  ScrollViewer.VerticalScrollBarVisibility="Auto" />
         <Button Content="로그 폴더 열기" Command="{Binding OpenLogFolderCommand}"

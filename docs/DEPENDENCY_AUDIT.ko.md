@@ -13,7 +13,7 @@
 | CmlLib.Core.Installer.NeoForge | 4.0.1 | NeoForge 설치 (MIT) |
 | XboxAuthNet.Game.Msal | 0.1.2 | MSAL 브라우저·디바이스 코드 provider 및 OS 보호 토큰 캐시 (MIT) |
 | SharpCompress | 0.50.5 | 7z 압축 해제. 모든 항목은 `ModuleValidation`으로 사전 검증 후 스트리밍됩니다. |
-| Velopack | 1.2.0 | 시작 훅만 사용(`VelopackApp.Build().Run()`). 업데이트 확인·적용 UI와 업데이트 피드는 아직 없음 (MIT) |
+| Velopack | 1.2.0 | GitHub Releases 기반 자동 업데이트 (MIT). 시작 훅(`VelopackApp.Build().Run()`)과 업데이트 확인·적용은 설치 파일 설치본·Portable.zip에서 동작. 릴리스 워크플로는 `vpk` 1.2.0 CLI로 패키징·업로드. 코드 서명 미적용 |
 | DiscordRichPresence | 1.6.1.70 | 선택적 Discord IPC. 컴파일 플래그와 사용자 opt-in 뒤에 있음 (MIT) |
 
 ## 매니페스트 도구

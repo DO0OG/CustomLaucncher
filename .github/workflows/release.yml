@@ -13,24 +13,38 @@ jobs:
 
   publish:
     needs: verify
+    permissions:
+      contents: read
     strategy:
       matrix:
         include:
           - os: windows-latest
             rid: win-x64
+            channel: win
+            exe: CustomLauncher.exe
+            icon: --icon CustomLauncher/icon.ico
           - os: ubuntu-latest
             rid: linux-x64
+            channel: linux
+            exe: CustomLauncher
+            icon: ''
           - os: macos-latest
             rid: osx-x64
+            channel: osx-x64
+            exe: CustomLauncher
+            icon: ''
           - os: macos-latest
             rid: osx-arm64
+            channel: osx-arm64
+            exe: CustomLauncher
+            icon: ''
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 8.0.x
-      - run: dotnet publish CustomLauncher/CustomLauncher.csproj -c Release -r ${{ matrix.rid }} --self-contained -p:PublishSingleFile=true -o artifacts/${{ matrix.rid }}
+      - run: dotnet publish CustomLauncher/CustomLauncher.csproj -c Release -r ${{ matrix.rid }} --self-contained -p:Version=${{ inputs.version }} -o artifacts/${{ matrix.rid }}
       - if: runner.os == 'Windows'
         shell: pwsh
         run: |
@@ -38,10 +52,44 @@ jobs:
       - if: runner.os == 'macOS'
         run: |
           if [ -z "$APPLE_SIGNING_IDENTITY" ]; then echo "Unsigned macOS artifact: public distribution is blocked until signing/notarization secrets are configured."; fi
+      - run: dotnet tool install -g vpk --version 1.2.0
+      - shell: bash
+        run: |
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          vpk pack -H
+          # packId는 Velopack 설치 폴더(%LOCALAPPDATA%\<packId>) 이름이 됩니다. 런처의 설정·로그 폴더
+          # (%LOCALAPPDATA%\CustomLauncher)와 겹치면 제거 때 사용자 설정이 지워지므로 다른 이름을 씁니다.
+          vpk pack --packId CustomLauncherApp --packVersion "${{ inputs.version }}" --packDir artifacts/${{ matrix.rid }} --mainExe ${{ matrix.exe }} --outputDir releases/${{ matrix.channel }} --channel ${{ matrix.channel }} --packTitle CustomLauncher --packAuthors DO0OG ${{ matrix.icon }}
       - uses: actions/upload-artifact@v4
         with:
           name: CustomLauncher-${{ matrix.rid }}-${{ inputs.version }}
-          path: artifacts/${{ matrix.rid }}
+          path: releases/${{ matrix.channel }}
 
-# Public release promotion is intentionally separate: signed Windows and notarized
-# macOS artifacts must be produced with repository secrets before a GitHub release.
+  release:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet tool install -g vpk --version 1.2.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: CustomLauncher-*-${{ inputs.version }}
+          path: packages
+      - env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          pre=""
+          case "$VERSION" in *-*) pre="--pre" ;; esac
+          for entry in win-x64:win linux-x64:linux osx-x64:osx-x64 osx-arm64:osx-arm64; do
+            rid="${entry%%:*}"; channel="${entry##*:}"
+            vpk upload github --outputDir "packages/CustomLauncher-$rid-$VERSION" --channel "$channel" --repoUrl "https://github.com/${{ github.repository }}" --token "$GITHUB_TOKEN" --publish --merge $pre --releaseName "v$VERSION" --tag "v$VERSION" --targetCommitish "${{ github.sha }}"
+          done
+
+# Packages are uploaded to the GitHub release without signing; Windows signing and
+# macOS notarization are a follow-up and the warnings above remain until then.

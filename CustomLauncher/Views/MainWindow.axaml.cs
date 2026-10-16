@@ -20,6 +20,7 @@ public partial class MainWindow : Window
         };
         Activated += (_, _) => { if (DataContext is MainViewModel vm) vm.WindowActive = true; };
         Deactivated += (_, _) => { if (DataContext is MainViewModel vm) vm.WindowActive = false; };
+        GameLogBox.TextChanged += (_, _) => GameLogBox.CaretIndex = GameLogBox.Text?.Length ?? 0;
     }
 
     private void TitleBarPointerPressed(object? sender, PointerPressedEventArgs e)

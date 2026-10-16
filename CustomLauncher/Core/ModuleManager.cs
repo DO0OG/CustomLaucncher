@@ -154,7 +154,7 @@ public sealed class ModuleManager
         var destinationPrefix = ModuleValidation.NormalizeManifestPath(module.Path);
         var extractRoot = Path.Combine(stagingRoot, "extracted", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(extractRoot);
-        using var archive = ArchiveFactory.Open(artifact);
+        using var archive = ArchiveFactory.OpenArchive(artifact);
         var entries = archive.Entries.ToList();
         if (entries.Count > _options.MaxArchiveEntries)
             throw new InvalidDataException($"Archive for '{module.Id}' has too many entries.");

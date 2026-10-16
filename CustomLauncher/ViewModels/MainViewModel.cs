@@ -727,16 +727,18 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     public static string GameLogDirectory(string installPathOrDefault, string serverId) =>
         Path.Combine(LauncherServers.GameDirectoryFor(installPathOrDefault, serverId), "logs");
 
+    /// <summary>Raised with the folder path when the user asks to open the game log folder; the window opens it with the platform launcher.</summary>
+    public event EventHandler<string>? OpenFolderRequested;
+
     private void OpenLogFolder()
     {
         try
         {
             var path = GameLogDirectory(InstallRoot(), CurrentServerId());
             Directory.CreateDirectory(path);
-            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+            OpenFolderRequested?.Invoke(this, path);
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException
-            or System.ComponentModel.Win32Exception or ArgumentException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
         {
             Status = "로그 폴더를 열지 못했습니다. 로그를 확인해 주세요.";
             _ = _logger.WriteAsync(LauncherLogLevel.Error, "Opening the game log folder failed", exception);

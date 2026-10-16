@@ -27,6 +27,9 @@ CI는 모든 PR에 대해 Windows·macOS·Linux에서 restore, build, 단위 테
   넣든 인식.
 - 로그아웃: 세션이 해제되고 주 버튼이 로그인으로 되돌아가며, 자격 증명 삭제가 예외를 던져도
   세션은 그대로 해제됨.
+- 여러 계정: 계정이 2개 이상일 때만 선택 목록이 보이고, 고른 계정으로 전환되어 `SelectedAccountId`에 저장되며, 저장된 계정이 없으면 첫 계정으로 복원됨(`CustomLauncher.Tests/AuthAccountTests.cs`, `MainViewModelLifecycleTests.cs`).
+- 개별 로그아웃: 가짜 인증 서비스로 선택한 계정의 id가 개별 로그아웃 호출에 전달되고, 남은 첫 계정으로 전환·저장되며, 남은 계정이 없으면 로그아웃 상태가 됨(`CustomLauncher.Tests/MainViewModelLifecycleTests.cs`). 실제 MSAL 캐시·계정 파일 삭제는 이 테스트 범위가 아니며 "자동화 미포함"의 수동 확인에 해당함.
+- 개인정보: 계정 식별자·이메일·토큰이 로그와 상태 문구에 남지 않음(`CustomLauncher.Tests/AuthAccountTests.cs`, `MainViewModelLifecycleTests.cs`).
 - 진행률 문자열 형식(`게임 파일 설치 3/10 파일, 5.0/20.0 MB`와 파일 수만 있는 형식).
 - 비정상 종료 메시지의 충돌 보고서·로그 경로 표시.
 - 실행 후 런처 닫기 요청, 그리고 `FullScreen`·`CloseLauncherOnGameStart` 설정 두 값의 저장.
@@ -50,7 +53,7 @@ CI는 모든 PR에 대해 Windows·macOS·Linux에서 restore, build, 단위 테
 ▲▼ 버튼은 단위 테스트된 동일한 `MoveToAsync` 진입점을 호출하므로, 제스처 자체는 아니어도
 순서 규칙은 커버됩니다.
 
-실제 NeoForge·Quilt 설치와 실서버에 대한 SLP 상태 확인은 자동화되어 있지 않습니다.
+실제 NeoForge·Quilt 설치와 실서버에 대한 SLP 상태 확인은 자동화되어 있지 않습니다. 실제 Microsoft 계정 두 개로 추가·전환·개별 로그아웃하는 흐름도 자동화되어 있지 않아 수동으로 확인해야 합니다.
 
 ## 수동 릴리스 게이트
 

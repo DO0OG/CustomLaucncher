@@ -50,6 +50,9 @@
             </DataTemplate>
           </ComboBox.ItemTemplate>
         </ComboBox>
+        <ComboBox ItemsSource="{Binding Accounts}" SelectedItem="{Binding SelectedAccount, Mode=TwoWay}"
+                  IsVisible="{Binding HasMultipleAccounts}" IsEnabled="{Binding !Busy}"
+                  MinWidth="200" HorizontalAlignment="Center" />
         <TextBlock Text="{Binding ServerMotd}" Classes="muted" TextWrapping="Wrap" MaxHeight="40"
                    HorizontalAlignment="Center" TextAlignment="Center" />
       </StackPanel>
@@ -100,7 +103,9 @@
           <Button Classes="accent" Content="Microsoft 로그인" Command="{Binding LoginCommand}"
                   IsVisible="{Binding IsSignedOut}" />
           <!-- Secondary next to the primary action: signing out is deliberate, not the default. -->
-          <Button Content="로그아웃" Command="{Binding LogoutCommand}"
+          <Button Content="계정 추가" Command="{Binding AddAccountCommand}"
+                  IsVisible="{Binding IsAuthenticated}" />
+          <Button Content="이 계정 로그아웃" Command="{Binding LogoutCommand}"
                   IsVisible="{Binding IsAuthenticated}" />
           <Button Classes="accent" Content="게임 시작" Command="{Binding LaunchCommand}"
                   IsVisible="{Binding IsAuthenticated}" />

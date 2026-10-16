@@ -93,6 +93,189 @@ public sealed class MainViewModelLifecycleTests
     }
 
     [Fact]
+    public async Task InitializeWithoutAccountsNeedsSignInAndRestoresNothing()
+    {
+        var auth = new MultiAccountAuthService();
+        await using var viewModel = await CreateAccountViewModelAsync(auth, null);
+
+        Assert.True(viewModel.IsSignedOut);
+        Assert.Empty(auth.Restored);
+        Assert.False(viewModel.HasMultipleAccounts);
+        Assert.Null(viewModel.SelectedAccount);
+    }
+
+    [Fact]
+    public async Task InitializeRestoresTheOnlyAccount()
+    {
+        var auth = new MultiAccountAuthService(One);
+        await using var viewModel = await CreateAccountViewModelAsync(auth, null);
+
+        Assert.Equal([One.Id], auth.Restored);
+        Assert.True(viewModel.IsAuthenticated);
+        Assert.Equal(One.Id, viewModel.SelectedAccount?.Id);
+        Assert.False(viewModel.HasMultipleAccounts);
+    }
+
+    [Theory]
+    [InlineData("fake-home-id-2", "fake-home-id-2")]
+    [InlineData("fake-home-id-gone", "fake-home-id-1")]
+    public async Task InitializeRestoresTheSavedAccountOrTheFirstOne(string savedId, string expectedId)
+    {
+        var auth = new MultiAccountAuthService(One, Two);
+        await using var viewModel = await CreateAccountViewModelAsync(auth, savedId);
+
+        Assert.Equal([expectedId], auth.Restored);
+        Assert.Equal(expectedId, viewModel.SelectedAccount?.Id);
+        Assert.True(viewModel.HasMultipleAccounts);
+        Assert.True(viewModel.IsAuthenticated);
+    }
+
+    [Fact]
+    public async Task LogoutSignsOutOnlyTheSelectedAccountAndSwitchesToTheRemainingOne()
+    {
+        var auth = new MultiAccountAuthService(One, Two);
+        await using var viewModel = await CreateAccountViewModelAsync(auth, Two.Id);
+
+        await viewModel.LogoutAsync();
+
+        Assert.Equal([Two.Id], auth.SignedOut);
+        Assert.Equal([Two.Id, One.Id], auth.Restored);
+        Assert.Equal(One.Id, viewModel.SelectedAccount?.Id);
+        Assert.False(viewModel.HasMultipleAccounts);
+        Assert.True(viewModel.IsAuthenticated);
+        Assert.Equal(One.Id, viewModel.Settings.SelectedAccountId);
+        Assert.Equal(One.Id, (await new AppSettingsManager(auth.Paths!).LoadAsync()).SelectedAccountId);
+    }
+
+    [Fact]
+    public async Task LogoutOfTheLastAccountLeavesTheSignedOutState()
+    {
+        var auth = new MultiAccountAuthService(One);
+        await using var viewModel = await CreateAccountViewModelAsync(auth, null);
+
+        await viewModel.LogoutAsync();
+
+        Assert.Equal([One.Id], auth.SignedOut);
+        Assert.Equal([One.Id], auth.Restored);
+        Assert.True(viewModel.IsSignedOut);
+        Assert.Null(viewModel.SelectedAccount);
+        Assert.Equal("로그인하지 않음", viewModel.Account);
+    }
+
+    [Fact]
+    public async Task PickingAnotherAccountRestoresItAndSavesTheChoice()
+    {
+        var auth = new MultiAccountAuthService(One, Two);
+        await using var viewModel = await CreateAccountViewModelAsync(auth, One.Id);
+
+        viewModel.SelectedAccount = viewModel.Accounts[1];
+        await WaitIdleAsync(viewModel);
+
+        Assert.Equal([One.Id, Two.Id], auth.Restored);
+        Assert.Equal(Two.Id, viewModel.SelectedAccount?.Id);
+        Assert.Equal(Two.Id, (await new AppSettingsManager(auth.Paths!).LoadAsync()).SelectedAccountId);
+        Assert.True(viewModel.IsAuthenticated);
+    }
+
+    [Fact]
+    public async Task PickingAnAccountWhileBusyDoesNothing()
+    {
+        var auth = new MultiAccountAuthService(One, Two) { Added = Three, Gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously) };
+        await using var viewModel = await CreateAccountViewModelAsync(auth, One.Id);
+
+        var adding = viewModel.AddAccountAsync();
+        Assert.True(viewModel.Busy);
+        viewModel.SelectedAccount = viewModel.Accounts[1];
+        Assert.Equal([One.Id], auth.Restored);
+
+        auth.Gate.SetResult();
+        await adding;
+        Assert.Equal([One.Id], auth.Restored);
+    }
+
+    [Fact]
+    public async Task AddingAnAccountSelectsItAndGrowsTheList()
+    {
+        var auth = new MultiAccountAuthService(One) { Added = Two };
+        await using var viewModel = await CreateAccountViewModelAsync(auth, null);
+
+        await viewModel.AddAccountAsync();
+
+        Assert.Equal([One.Id, Two.Id], viewModel.Accounts.Select(account => account.Id));
+        Assert.Equal(Two.Id, viewModel.SelectedAccount?.Id);
+        Assert.True(viewModel.HasMultipleAccounts);
+        Assert.Equal(Two.Id, (await new AppSettingsManager(auth.Paths!).LoadAsync()).SelectedAccountId);
+        Assert.True(viewModel.IsAuthenticated);
+    }
+
+    [Fact]
+    public async Task AddingAnAccountWithoutAResultKeepsTheCurrentSession()
+    {
+        var auth = new MultiAccountAuthService(One);
+        await using var viewModel = await CreateAccountViewModelAsync(auth, null);
+
+        await viewModel.AddAccountAsync();
+
+        Assert.True(viewModel.IsAuthenticated);
+        Assert.Equal(One.Id, viewModel.SelectedAccount?.Id);
+        Assert.False(viewModel.Busy);
+    }
+
+    [Fact]
+    public async Task AccountFlowsNeverPutIdentifiersOrTokensInStatusOrLog()
+    {
+        var auth = new MultiAccountAuthService(One, Two) { Added = Three };
+        var statuses = new List<string>();
+        await using var viewModel = await CreateAccountViewModelAsync(auth, One.Id, statuses);
+
+        viewModel.SelectedAccount = viewModel.Accounts[1];
+        await WaitIdleAsync(viewModel);
+        await viewModel.AddAccountAsync();
+        await viewModel.LogoutAsync();
+        auth.RestoreFails = true;
+        await viewModel.LogoutAsync();
+
+        Assert.NotEmpty(statuses);
+        var log = Path.Combine(auth.Paths!.LogDir, LauncherConfig.DebugLogFileName);
+        var logText = File.Exists(log) ? await File.ReadAllTextAsync(log) : string.Empty;
+        foreach (var secret in new[] { "fake-home-id", "example.invalid", "fake-token" })
+        {
+            Assert.DoesNotContain(statuses, status => status.Contains(secret, StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(secret, logText, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private static readonly AuthAccount One = new("fake-home-id-1", "PlayerOne");
+    private static readonly AuthAccount Two = new("fake-home-id-2", "PlayerTwo");
+    private static readonly AuthAccount Three = new("fake-home-id-3", "player-three@example.invalid");
+
+    private static async Task<MainViewModel> CreateAccountViewModelAsync(
+        MultiAccountAuthService auth, string? savedId, List<string>? statuses = null)
+    {
+        var home = Path.Combine(Path.GetTempPath(), $"launcher-accounts-{Guid.NewGuid():N}");
+        var paths = new AppPaths(PlatformKind.Linux, home, new Dictionary<string, string?>());
+        auth.Paths = paths;
+        await new AppSettingsManager(paths).SaveAsync(new LauncherSettings { SelectedAccountId = savedId });
+        var list = Distribution(Server("alpha"));
+        var viewModel = new MainViewModel(paths, new AppSettingsManager(paths), new DebugLogger(paths), auth,
+            new StubLauncherService(), _ => new FakeContentService { Cached = list, Fetched = list },
+            (_, _) => Task.FromResult(ServerStatusInfo.Unavailable("test")));
+        viewModel.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(MainViewModel.Status)) statuses?.Add(viewModel.Status);
+        };
+        await viewModel.InitializeAsync();
+        statuses?.Add(viewModel.Status);
+        return viewModel;
+    }
+
+    private static async Task WaitIdleAsync(MainViewModel viewModel)
+    {
+        for (var attempt = 0; attempt < 250 && viewModel.Busy; attempt++) await Task.Delay(20);
+        Assert.False(viewModel.Busy);
+    }
+
+    [Fact]
     public void AbnormalExitMessageNamesTheNewestCrashReportAndLog()
     {
         var gameDir = Path.Combine(Path.GetTempPath(), $"launcher-crash-{Guid.NewGuid():N}");
@@ -323,6 +506,51 @@ public sealed class MainViewModelLifecycleTests
         {
             SignOutCalls++;
             return SignOutError is null ? Task.CompletedTask : Task.FromException(SignOutError);
+        }
+    }
+
+    private sealed class MultiAccountAuthService(params AuthAccount[] initial) : IAuthService
+    {
+        public AppPaths? Paths { get; set; }
+        public List<AuthAccount> Accounts { get; } = [.. initial];
+        public List<string> Restored { get; } = [];
+        public List<string> SignedOut { get; } = [];
+        public AuthAccount? Added { get; init; }
+        public TaskCompletionSource? Gate { get; init; }
+        public bool RestoreFails { get; set; }
+
+        private static MSession SessionFor(string id) => new($"Name-{id}", $"fake-token-{id}", Guid.NewGuid().ToString("N"));
+
+        public Task<MSession?> AuthenticateAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<MSession?>(SessionFor("login"));
+
+        public Task<MSession?> TryRestoreAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<MSession?>(null);
+
+        public Task SignOutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task<IReadOnlyList<AuthAccount>> GetAccountsAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<AuthAccount>>([.. Accounts]);
+
+        public Task<MSession?> RestoreAccountAsync(string accountId, CancellationToken cancellationToken = default)
+        {
+            Restored.Add(accountId);
+            return Task.FromResult<MSession?>(RestoreFails ? null : SessionFor(accountId));
+        }
+
+        public async Task<(AuthAccount Account, MSession Session)?> AddAccountAsync(CancellationToken cancellationToken = default)
+        {
+            if (Gate is not null) await Gate.Task;
+            if (Added is null) return null;
+            Accounts.Add(Added);
+            return (Added, SessionFor(Added.Id));
+        }
+
+        public Task SignOutAccountAsync(string accountId, CancellationToken cancellationToken = default)
+        {
+            SignedOut.Add(accountId);
+            Accounts.RemoveAll(account => account.Id == accountId);
+            return Task.CompletedTask;
         }
     }
 

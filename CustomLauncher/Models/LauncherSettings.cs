@@ -18,6 +18,9 @@ public sealed class LauncherSettings
 
     public string? SelectedServerId { get; set; }
 
+    /// <summary>마지막으로 쓴 Microsoft 계정의 MSAL 식별자. 비어 있거나 목록에 없으면 첫 계정을 쓴다.</summary>
+    public string? SelectedAccountId { get; set; }
+
     /// <summary>
     /// 서버별로 사용자가 끈 선택형(Optional) 모듈의 Id. 서버 매니페스트는 서버 소유이므로
     /// 사용자 선택 상태는 여기(사용자 설정)에만 기록한다.

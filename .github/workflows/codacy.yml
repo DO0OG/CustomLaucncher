@@ -55,6 +55,30 @@ jobs:
           locale; echo "LANG=$LANG"; git config --get core.autocrlf || true
       - name: Image java properties (temporary diagnostic)
         run: docker run --rm --entrypoint java codacy/codacy-analysis-cli:4.0.0 -XshowSettings:properties -version 2>&1 | grep -E 'encoding|java.version' || true
+      - name: Java 8 readAllLines check (temporary diagnostic)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Run Java 8 readAllLines over all source files (temporary diagnostic)
+        run: |
+          mkdir -p /tmp/jread && cat > /tmp/jread/ReadAll.java <<'JAVA'
+          import java.nio.file.*; import java.util.*; import java.io.*;
+          public class ReadAll { public static void main(String[] a) throws Exception {
+            final List<String> fails = new ArrayList<String>();
+            Files.walkFileTree(Paths.get(a[0]), new SimpleFileVisitor<Path>() {
+              public FileVisitResult visitFile(Path p, java.nio.file.attribute.BasicFileAttributes attrs) {
+                String n = p.toString();
+                if (n.contains("/.git/")) return FileVisitResult.CONTINUE;
+                if (!(n.endsWith(".cs") || n.endsWith(".md") || n.endsWith(".json") || n.endsWith(".axaml") || n.endsWith(".yml"))) return FileVisitResult.CONTINUE;
+                try { Files.readAllLines(p); } catch (Exception e) { fails.add(n + " : " + e); }
+                return FileVisitResult.CONTINUE; } });
+            for (String f : fails) System.out.println("JAVA8 FAIL " + f);
+            System.out.println("JAVA8 checked, failures=" + fails.size());
+          }}
+          JAVA
+          javac -d /tmp/jread /tmp/jread/ReadAll.java && java -cp /tmp/jread ReadAll "$GITHUB_WORKSPACE"
+          java -XshowSettings:properties -version 2>&1 | grep -E 'file.encoding|java.version' || true
       - name: Codacy JSON run (temporary diagnostic)
         continue-on-error: true
         run: |

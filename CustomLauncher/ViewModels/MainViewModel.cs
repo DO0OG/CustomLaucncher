@@ -200,7 +200,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
             Status = IdleStatus();
             _ = RefreshServersAsync(content);
         }
-        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { /* 런처 종료 중 취소된 작업은 무시합니다. */ }
         catch (Exception exception)
         {
             Status = "초기화에 실패했습니다. 로그를 확인해 주세요.";
@@ -232,7 +232,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
                 finally { _serverSwitch.Release(); }
             }
         }
-        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { /* 런처 종료 중 취소된 작업은 무시합니다. */ }
         catch (Exception exception)
         {
             await _logger.WriteAsync(LauncherLogLevel.Warn, "Server list refresh failed; keeping the cached list", exception);
@@ -281,7 +281,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
             }
             finally { _serverSwitch.Release(); }
         }
-        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { /* 런처 종료 중 취소된 작업은 무시합니다. */ }
         catch (Exception exception)
         {
             await _logger.WriteAsync(LauncherLogLevel.Warn, "Switching the selected server failed", exception);

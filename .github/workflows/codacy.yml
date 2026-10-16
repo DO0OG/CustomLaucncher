@@ -86,7 +86,8 @@ jobs:
               issue = unwrap(element)
               if not isinstance(issue, dict) or "patternId" not in issue:
                   continue  # FileError, FileMetrics 등은 건너뜁니다.
-              rule_id = "SonarCSharp_" + str(scalar(issue["patternId"], "value"))
+              pattern = str(scalar(issue["patternId"], "value"))
+              rule_id = pattern if pattern.startswith("SonarCSharp_") else "SonarCSharp_" + pattern
               message = str(scalar(issue.get("message", ""), "text"))
               rules.setdefault(rule_id, {"id": rule_id, "shortDescription": {"text": rule_id}})
               results.append({

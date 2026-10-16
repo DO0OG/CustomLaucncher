@@ -34,6 +34,19 @@ public sealed class AppSettingsManagerTests : IDisposable
     }
 
     [Fact]
+    public async Task CorruptSettingsFileIsBackedUpBeforeDefaultsReplaceIt()
+    {
+        var paths = new AppPaths(PlatformKind.Linux, _root, new Dictionary<string, string?>());
+        paths.EnsureCreated();
+        await File.WriteAllTextAsync(paths.SettingsFile, "{ not json");
+        var settings = await new AppSettingsManager(paths).LoadAsync();
+        Assert.NotNull(settings);
+        var backups = Directory.GetFiles(Path.GetDirectoryName(paths.SettingsFile)!, Path.GetFileName(paths.SettingsFile) + ".corrupt-*");
+        Assert.Single(backups);
+        Assert.Equal("{ not json", await File.ReadAllTextAsync(backups[0]));
+    }
+
+    [Fact]
     public async Task SelectedAccountIdRoundTrips()
     {
         var paths = new AppPaths(PlatformKind.Linux, _root, new Dictionary<string, string?>());

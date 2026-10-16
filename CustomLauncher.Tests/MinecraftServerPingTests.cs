@@ -228,7 +228,7 @@ internal sealed class FakeStatusServer : IAsyncDisposable
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
-            return; // The test ended while the script was still waiting.
+            // The test ended while the script was still waiting.
         }
     }
 }

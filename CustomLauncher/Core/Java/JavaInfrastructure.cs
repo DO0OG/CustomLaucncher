@@ -105,6 +105,7 @@ public sealed class JavaProcessRunner : IJavaProcessRunner
             }
             catch (InvalidOperationException)
             {
+                /* 프로세스가 이미 종료된 경우 Kill이 실패할 수 있습니다. 원래 취소 예외를 그대로 던지므로 무시합니다. */
             }
 
             throw;

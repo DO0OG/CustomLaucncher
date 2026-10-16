@@ -27,8 +27,12 @@ public sealed class AppSettingsManager
                 var loaded = await JsonSerializer.DeserializeAsync<LauncherSettings>(stream, JsonOptions, cancellationToken);
                 return Normalize(loaded ?? CreateDefault());
             }
-            catch (JsonException) { }
-            catch (IOException) { }
+            catch (JsonException)
+            {
+                // 손상된 설정 파일은 덮어쓰기 전에 보관해 두고 레거시 설정 마이그레이션 경로로 넘어갑니다.
+                BackupCorruptSettings();
+            }
+            catch (IOException) { /* 읽기 실패 시 레거시 설정 마이그레이션 경로로 넘어갑니다. */ }
         }
 
         var migrated = await LoadLegacyAsync(cancellationToken);
@@ -48,6 +52,17 @@ public sealed class AppSettingsManager
             await stream.FlushAsync(cancellationToken);
         }
         File.Move(temp, _paths.SettingsFile, true);
+    }
+
+    /// <summary>Keeps a copy of an unreadable settings file next to it so the user can recover their values.</summary>
+    private void BackupCorruptSettings()
+    {
+        try
+        {
+            File.Copy(_paths.SettingsFile, $"{_paths.SettingsFile}.corrupt-{DateTime.UtcNow:yyyyMMddHHmmss}", true);
+        }
+        catch (IOException) { /* 백업에 실패해도 기본 설정으로 계속 시작합니다. */ }
+        catch (UnauthorizedAccessException) { /* 백업에 실패해도 기본 설정으로 계속 시작합니다. */ }
     }
 
     private async Task<LauncherSettings> LoadLegacyAsync(CancellationToken cancellationToken)

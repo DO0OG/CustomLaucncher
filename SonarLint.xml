@@ -1,21 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Codacy의 Sonar C# 도구가 실행할 규칙 목록입니다. Codacy 기본 활성 규칙 중 보안·오류·성능·
-     미사용 코드 범주만 켜고, 중괄호·public const 같은 스타일·설계 선택 규칙은 저장소 코드
-     스타일과 맞지 않아 제외합니다. 규칙 설명: https://rules.sonarsource.com/csharp/ -->
+     미사용 코드 범주만 켭니다. 다음은 제외합니다.
+     - 스타일·설계 선택: 중괄호(S121), public const(S2339), 선택적 매개변수(S2360), 라이선스 헤더(S1451),
+       어셈블리 특성(S3990, S3992), 문자열 중복(S1192), 문자열 URI(S3994, S3996, S1075), 메서드 이름(S3903)
+     - 프로젝트 참조 없이 분석해 생기는 오탐: 인터페이스 구현의 미사용 매개변수(S1172), 위치 레코드 뒤
+       세미콜론(S1116), 레코드의 sealed(S2333), ?.Invoke로 호출하는 이벤트(S3264), 컬렉션 식·클로저에서
+       쓰는 값(S1854, S3459), 빈 메서드(S1186), 테스트 보조 기본값(S3254, S3241)
+     규칙 설명: https://rules.sonarsource.com/csharp/ -->
 <AnalysisInput>
   <Rules>
     <Rule><Key>S1006</Key></Rule>
     <Rule><Key>S108</Key></Rule>
     <Rule><Key>S110</Key></Rule>
-    <Rule><Key>S1116</Key></Rule>
     <Rule><Key>S1117</Key></Rule>
     <Rule><Key>S1118</Key></Rule>
     <Rule><Key>S112</Key></Rule>
     <Rule><Key>S1121</Key></Rule>
     <Rule><Key>S1163</Key></Rule>
-    <Rule><Key>S1172</Key></Rule>
     <Rule><Key>S1185</Key></Rule>
-    <Rule><Key>S1186</Key></Rule>
     <Rule><Key>S1206</Key></Rule>
     <Rule><Key>S1215</Key></Rule>
     <Rule><Key>S1226</Key></Rule>
@@ -32,7 +34,6 @@
     <Rule><Key>S1656</Key></Rule>
     <Rule><Key>S1699</Key></Rule>
     <Rule><Key>S1764</Key></Rule>
-    <Rule><Key>S1854</Key></Rule>
     <Rule><Key>S1858</Key></Rule>
     <Rule><Key>S1862</Key></Rule>
     <Rule><Key>S1871</Key></Rule>
@@ -57,10 +58,8 @@
     <Rule><Key>S2326</Key></Rule>
     <Rule><Key>S2328</Key></Rule>
     <Rule><Key>S2330</Key></Rule>
-    <Rule><Key>S2333</Key></Rule>
     <Rule><Key>S2345</Key></Rule>
     <Rule><Key>S2357</Key></Rule>
-    <Rule><Key>S2360</Key></Rule>
     <Rule><Key>S2368</Key></Rule>
     <Rule><Key>S2372</Key></Rule>
     <Rule><Key>S2376</Key></Rule>
@@ -102,19 +101,16 @@
     <Rule><Key>S3235</Key></Rule>
     <Rule><Key>S3236</Key></Rule>
     <Rule><Key>S3237</Key></Rule>
-    <Rule><Key>S3241</Key></Rule>
     <Rule><Key>S3244</Key></Rule>
     <Rule><Key>S3246</Key></Rule>
     <Rule><Key>S3247</Key></Rule>
     <Rule><Key>S3249</Key></Rule>
     <Rule><Key>S3251</Key></Rule>
     <Rule><Key>S3253</Key></Rule>
-    <Rule><Key>S3254</Key></Rule>
     <Rule><Key>S3257</Key></Rule>
     <Rule><Key>S3261</Key></Rule>
     <Rule><Key>S3262</Key></Rule>
     <Rule><Key>S3263</Key></Rule>
-    <Rule><Key>S3264</Key></Rule>
     <Rule><Key>S3397</Key></Rule>
     <Rule><Key>S3427</Key></Rule>
     <Rule><Key>S3440</Key></Rule>
@@ -130,7 +126,6 @@
     <Rule><Key>S3453</Key></Rule>
     <Rule><Key>S3457</Key></Rule>
     <Rule><Key>S3458</Key></Rule>
-    <Rule><Key>S3459</Key></Rule>
     <Rule><Key>S3466</Key></Rule>
     <Rule><Key>S3532</Key></Rule>
     <Rule><Key>S3597</Key></Rule>

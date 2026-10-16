@@ -114,6 +114,7 @@ public sealed class ServerStatusPollingService : IAsyncDisposable
         }
         catch (OperationCanceledException)
         {
+            /* 정지 요청으로 인한 취소는 정상 종료이므로 무시합니다. */
         }
         finally
         {

@@ -22,7 +22,7 @@ public sealed class GameSessionPreparerTests
             .PrepareAsync(new MLaunchOption());
 
         Assert.Equal("installer-returned-version", result.TargetVersionName);
-        Assert.Equal(distribution, result.Distribution);
+        Assert.Equal(distribution.Servers[0].Id, result.Distribution.ServerId);
         Assert.Equal(["fetch", "update", "cache", "loader", "install:installer-returned-version", "create:installer-returned-version"], calls);
     }
 
@@ -73,6 +73,55 @@ public sealed class GameSessionPreparerTests
     }
 
     [Fact]
+    public async Task PrepareAsync_OfflineStateIsJudgedPerSelectedServer()
+    {
+        var calls = new List<string>();
+        var cached = TwoServers();
+        var content = new FakeContent(calls, cached, new ModuleUpdateResult(ModuleUpdateStatus.UpToDate, []))
+        {
+            FetchException = new HttpRequestException("offline"),
+            CachedDistribution = cached,
+            HasManagedStateValue = true,
+            ManagedServers = new HashSet<string> { "a" },
+        };
+        var selected = "a";
+        var preparer = new GameSessionPreparer(content, new FakeLoader(calls, "v"), new FakeRuntime(calls),
+            selectedServerId: () => selected);
+
+        var result = await preparer.PrepareAsync(new MLaunchOption());
+        Assert.Equal("a", result.Distribution.ServerId);
+
+        selected = "b";
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => preparer.PrepareAsync(new MLaunchOption()));
+        Assert.Contains("검증된 로컬 콘텐츠 상태가 없어", exception.Message);
+    }
+
+    [Fact]
+    public async Task PrepareAsync_UsesSelectedServerFolderAsGameDirectory()
+    {
+        var calls = new List<string>();
+        var root = Path.Combine(Path.GetTempPath(), "launcher-prepare-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var content = new FakeContent(calls, TwoServers(), new ModuleUpdateResult(ModuleUpdateStatus.UpToDate, []));
+            var option = new MLaunchOption();
+
+            await new GameSessionPreparer(content, new FakeLoader(calls, "v"), new FakeRuntime(calls),
+                    gameDirectory: root, selectedServerId: () => "b")
+                .PrepareAsync(option);
+
+            var serverDirectory = Path.Combine(Path.GetFullPath(root), "instances", "b");
+            Assert.True(Directory.Exists(serverDirectory));
+            Assert.Equal(serverDirectory, option.Path!.BasePath);
+            Assert.Equal(Path.Combine(Path.GetFullPath(root), "libraries"), option.Path.Library);
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
     public async Task PrepareAsync_FirstOfflineRunIsRejected()
     {
         var calls = new List<string>();
@@ -106,10 +155,28 @@ public sealed class GameSessionPreparerTests
         Assert.Equal(["fetch"], calls);
     }
 
+    private static ServerDistribution TwoServers() => new()
+    {
+        Servers =
+        [
+            new ServerEntry { Id = "a", Name = "A", Address = "a.example.com", MinecraftVersion = "1.20.1", Java = new JavaRequirement { MinVersion = "17" } },
+            new ServerEntry { Id = "b", Name = "B", Address = "b.example.com", MinecraftVersion = "1.20.1", Java = new JavaRequirement { MinVersion = "17" } },
+        ],
+    };
+
     private static ServerDistribution Distribution() => new()
     {
-        ServerId = "test",
-        Java = new JavaRequirement { MinVersion = "17", RecommendedVersion = "21" },
+        Servers =
+        [
+            new ServerEntry
+            {
+                Id = "test",
+                Name = "Test",
+                Address = "play.example.com",
+                MinecraftVersion = "1.20.1",
+                Java = new JavaRequirement { MinVersion = "17", RecommendedVersion = "21" },
+            },
+        ],
     };
 
     private sealed class FakeContent(List<string> calls, ServerDistribution distribution, ModuleUpdateResult update)
@@ -118,7 +185,9 @@ public sealed class GameSessionPreparerTests
         public Exception? FetchException { get; init; }
         public ServerDistribution? CachedDistribution { get; init; }
         public bool HasManagedStateValue { get; init; }
-        public bool HasManagedState => HasManagedStateValue;
+        public IReadOnlySet<string>? ManagedServers { get; init; }
+        public bool HasManagedState(string serverId) =>
+            HasManagedStateValue && (ManagedServers is null || ManagedServers.Contains(serverId));
         public Task<ServerDistribution> FetchAsync(CancellationToken cancellationToken)
         {
             calls.Add("fetch");
@@ -134,7 +203,7 @@ public sealed class GameSessionPreparerTests
 
     private sealed class FakeLoader(List<string> calls, string version) : IModLoaderInstaller
     {
-        public Task<string> EnsureInstalledAsync(IProgress<LaunchProgress>? progress, CancellationToken cancellationToken)
+        public Task<string> EnsureInstalledAsync(ModLoaderConfiguration configuration, IProgress<LaunchProgress>? progress, CancellationToken cancellationToken)
         { calls.Add("loader"); return Task.FromResult(version); }
     }
 

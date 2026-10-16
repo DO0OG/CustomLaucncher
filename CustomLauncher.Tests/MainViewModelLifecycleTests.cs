@@ -134,6 +134,162 @@ public sealed class MainViewModelLifecycleTests
         Assert.Equal("Java", new LaunchProgress("Java", 0).ToStatusText());
     }
 
+    [Fact]
+    public async Task InitializeShowsCachedServersAndRestoresTheSavedSelection()
+    {
+        var (paths, content) = await PrepareServerTestAsync(selectedId: "beta");
+        await using var viewModel = CreateServerViewModel(paths, content);
+
+        await viewModel.InitializeAsync();
+
+        Assert.Equal(["alpha", "beta"], viewModel.Servers.Select(server => server.Id));
+        Assert.True(viewModel.HasMultipleServers);
+        Assert.Equal("beta", viewModel.SelectedServer?.Id);
+        Assert.Equal("Beta", viewModel.ServerName);
+        Assert.Equal("beta.example.com:25570", viewModel.ServerEndpoint);
+    }
+
+    [Fact]
+    public async Task InitializeFallsBackToTheFirstServerWhenTheSavedIdIsGone()
+    {
+        var (paths, content) = await PrepareServerTestAsync(selectedId: "removed");
+        await using var viewModel = CreateServerViewModel(paths, content);
+
+        await viewModel.InitializeAsync();
+
+        Assert.Equal("alpha", viewModel.SelectedServer?.Id);
+    }
+
+    [Fact]
+    public async Task SwitchingServersSavesTheChoiceWithoutFetchingTheManifestAgain()
+    {
+        var (paths, content) = await PrepareServerTestAsync(selectedId: "alpha");
+        await using var viewModel = CreateServerViewModel(paths, content);
+        await viewModel.InitializeAsync();
+        Assert.Equal(1, content.FetchCalls);
+
+        viewModel.SelectedServer = viewModel.Servers[1];
+
+        Assert.Equal("beta", viewModel.Settings.SelectedServerId);
+        Assert.Equal("Beta", viewModel.ServerName);
+        for (var attempt = 0; attempt < 100 && (await new AppSettingsManager(paths).LoadAsync()).SelectedServerId != "beta"; attempt++)
+            await Task.Delay(20);
+        Assert.Equal("beta", (await new AppSettingsManager(paths).LoadAsync()).SelectedServerId);
+        Assert.Equal(1, content.FetchCalls);
+    }
+
+    [Fact]
+    public async Task SwitchingServersPollsTheNewServersStatusUrl()
+    {
+        var home = Path.Combine(Path.GetTempPath(), $"launcher-servers-{Guid.NewGuid():N}");
+        var paths = new AppPaths(PlatformKind.Linux, home, new Dictionary<string, string?>());
+        await new AppSettingsManager(paths).SaveAsync(new LauncherSettings { SelectedServerId = "alpha" });
+        var second = Server("beta");
+        second.StatusUrl = "https://status.example/b";
+        var list = Distribution(Server("alpha"), second);
+        var content = new FakeContentService { Cached = list, Fetched = list };
+        var urls = new List<string?>();
+        await using var viewModel = CreateServerViewModel(paths, content, urls);
+        await viewModel.InitializeAsync();
+
+        viewModel.SelectedServer = viewModel.Servers[1];
+
+        for (var attempt = 0; attempt < 250 && !HasUrl(urls, "https://status.example/b"); attempt++)
+            await Task.Delay(20);
+        Assert.True(HasUrl(urls, "https://status.example/b"));
+    }
+
+    private static bool HasUrl(List<string?> urls, string url)
+    {
+        lock (urls) return urls.Contains(url);
+    }
+
+    [Fact]
+    public async Task InitializeKeepsTheCachedListWhenTheStartupFetchFails()
+    {
+        var (paths, content) = await PrepareServerTestAsync(selectedId: "alpha");
+        content.FetchError = new HttpRequestException("offline");
+        await using var viewModel = CreateServerViewModel(paths, content);
+
+        await viewModel.InitializeAsync();
+
+        Assert.Equal(1, content.FetchCalls);
+        Assert.Equal(2, viewModel.Servers.Count);
+        Assert.Equal("alpha", viewModel.SelectedServer?.Id);
+    }
+
+    [Fact]
+    public async Task StartupFetchReplacesTheListAndKeepsTheSelectedId()
+    {
+        var (paths, content) = await PrepareServerTestAsync(selectedId: "beta");
+        content.Fetched = Distribution(Server("alpha"), Server("beta"), Server("gamma"));
+        await using var viewModel = CreateServerViewModel(paths, content);
+
+        await viewModel.InitializeAsync();
+
+        Assert.Equal(3, viewModel.Servers.Count);
+        Assert.Equal("beta", viewModel.SelectedServer?.Id);
+        Assert.Equal(0, content.SaveCacheCalls);
+    }
+
+    private static async Task<(AppPaths Paths, FakeContentService Content)> PrepareServerTestAsync(string selectedId)
+    {
+        var home = Path.Combine(Path.GetTempPath(), $"launcher-servers-{Guid.NewGuid():N}");
+        var paths = new AppPaths(PlatformKind.Linux, home, new Dictionary<string, string?>());
+        await new AppSettingsManager(paths).SaveAsync(new LauncherSettings { SelectedServerId = selectedId });
+        var list = Distribution(Server("alpha"), Server("beta"));
+        return (paths, new FakeContentService { Cached = list, Fetched = list });
+    }
+
+    private static MainViewModel CreateServerViewModel(
+        AppPaths paths, FakeContentService content, List<string?>? statusUrls = null) =>
+        new(paths, new AppSettingsManager(paths), new DebugLogger(paths), new SignedInAuthService(),
+            new StubLauncherService(), _ => content,
+            (url, _) =>
+            {
+                if (statusUrls is not null) lock (statusUrls) statusUrls.Add(url);
+                return Task.FromResult(ServerStatusInfo.Unavailable("test"));
+            });
+
+    private static ServerDistribution Distribution(params ServerEntry[] servers) => new() { Servers = [.. servers] };
+
+    private static ServerEntry Server(string id) => new()
+    {
+        Id = id,
+        Name = char.ToUpperInvariant(id[0]) + id[1..],
+        Address = $"{id}.example.com",
+        Port = id == "beta" ? 25570 : 25565,
+        MinecraftVersion = "1.20.1",
+    };
+
+    private sealed class FakeContentService : IContentUpdateService
+    {
+        public ServerDistribution? Cached { get; init; }
+        public ServerDistribution Fetched { get; set; } = new();
+        public Exception? FetchError { get; set; }
+        public int FetchCalls { get; private set; }
+        public int SaveCacheCalls { get; private set; }
+        public bool HasManagedState(string serverId) => false;
+
+        public Task<ServerDistribution> FetchAsync(CancellationToken cancellationToken)
+        {
+            FetchCalls++;
+            return FetchError is null ? Task.FromResult(Fetched) : Task.FromException<ServerDistribution>(FetchError);
+        }
+
+        public Task<ModuleUpdateResult> UpdateAsync(ServerDistribution distribution, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task SaveCacheAsync(ServerDistribution distribution, CancellationToken cancellationToken)
+        {
+            SaveCacheCalls++;
+            return Task.CompletedTask;
+        }
+
+        public Task<ServerDistribution?> TryLoadCacheAsync(CancellationToken cancellationToken) =>
+            Task.FromResult(Cached);
+    }
+
     private sealed class StartingLauncherService : ILauncherService
     {
         public bool Fail { get; init; }

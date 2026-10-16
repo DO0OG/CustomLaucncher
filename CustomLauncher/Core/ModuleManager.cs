@@ -48,7 +48,6 @@ public sealed class ModuleManager
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         var distribution = await JsonSerializer.DeserializeAsync<ServerDistribution>(stream, ManifestJson, cancellationToken)
             ?? throw new InvalidDataException("The distribution manifest is empty.");
-        ModuleValidation.ValidateDistribution(distribution);
         return distribution;
     }
 

@@ -63,6 +63,12 @@ the ordering rules are covered even though the gesture is not.
 | Progress numbers in the status line | Required | Required | Required |
 | Discord status shows server name | Required | Required | Required |
 | Signed package update | Required | Required + notarization | Required |
+| Multi-server: switching servers updates name, status, and Discord | Required | Required | Required |
+| Multi-server: selected server persists across restart | Required | Required | Required |
+| Multi-server: disabled optional modules are kept separately per server | Required | Required | Required |
+| Multi-server: `default` keeps the existing game folder, other servers use `instances/{id}`, offline check per server | Required | Required | Required |
+| Old single-server manifest and old settings still load (id `default`) | Required | Required | Required |
+| Server selector is hidden when the manifest has one server | Required | Required | Required |
 
 Public release still needs the real distribution endpoint filled in, target-OS machines, and
 signing credentials (Windows certificate, Apple Developer signing/notarization). Shader settings must

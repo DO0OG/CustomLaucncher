@@ -12,11 +12,17 @@ public sealed class DiscordRpcClientAdapter : IDiscordRpcClientAdapter
         if (!_client.IsInitialized) _client.Initialize();
     }
 
-    public void SetPresence(DiscordPresence presence) => _client?.SetPresence(new RichPresence
+    public void SetPresence(DiscordPresence presence)
     {
-        Details = presence.Details,
-        State = presence.State
-    });
+        var rich = new RichPresence
+        {
+            Details = presence.Details,
+            State = presence.State
+        };
+        if (!string.IsNullOrEmpty(presence.LargeImageKey))
+            rich.Assets = new Assets { LargeImageKey = presence.LargeImageKey };
+        _client?.SetPresence(rich);
+    }
 
     public void ClearPresence() => _client?.ClearPresence();
 

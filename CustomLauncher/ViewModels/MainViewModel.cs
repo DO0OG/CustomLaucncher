@@ -6,6 +6,7 @@ using CmlLib.Core.Auth.Microsoft;
 using CmlLib.Core.ProcessBuilder;
 using CustomLauncher.Core;
 using CustomLauncher.Models;
+using CustomLauncher.Shared.Models;
 
 namespace CustomLauncher.ViewModels;
 
@@ -18,11 +19,18 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     private readonly ILauncherService _launcher;
     private readonly CancellationTokenSource _lifetime = new();
     private readonly HttpClient _statusHttpClient;
+    private readonly HttpClient _contentHttpClient;
+    private readonly Func<string, IContentUpdateService> _contentFactory;
     private readonly ServerStatusPollingService _statusPolling;
+    private readonly SemaphoreSlim _serverSwitch = new(1, 1);
     private CancellationTokenSource? _currentOperation;
     private IDiscordPresenceService? _discord;
     private ProcessWrapper? _gameProcessWrapper;
     private Process? _gameProcess;
+    private readonly Func<string?, CancellationToken, Task<ServerStatusInfo>> _checkStatus;
+    private IReadOnlyList<ServerEntry> _servers = [];
+    private ServerEntry? _selectedServer;
+    private int _statusGeneration;
     private LauncherSettings _settings = new();
     private MSession? _session;
     private string _status = "초기화 중...";
@@ -42,7 +50,9 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         AppSettingsManager settingsManager,
         DebugLogger logger,
         IAuthService auth,
-        ILauncherService launcher)
+        ILauncherService launcher,
+        Func<string, IContentUpdateService>? contentFactory = null,
+        Func<string?, CancellationToken, Task<ServerStatusInfo>>? checkStatus = null)
     {
         _paths = paths;
         _settingsManager = settingsManager;
@@ -51,8 +61,12 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         if (_auth is AuthService deviceAuth) deviceAuth.DeviceCodeReceived += OnDeviceCodeReceived;
         _launcher = launcher;
         _statusHttpClient = new HttpClient();
-        var statusChecker = new ServerStatusChecker(_statusHttpClient);
-        _statusPolling = new ServerStatusPollingService(statusChecker.CheckAsync, () => WindowActive);
+        _contentHttpClient = new HttpClient();
+        _contentHttpClient.DefaultRequestHeaders.UserAgent.ParseAdd(LauncherConfig.UserAgent);
+        _contentFactory = contentFactory ?? (path => new ContentUpdateService(_contentHttpClient, path));
+        _checkStatus = checkStatus ?? ((url, token) => new ServerStatusChecker(_statusHttpClient, url).CheckAsync(token));
+        _statusPolling = new ServerStatusPollingService(
+            token => _checkStatus(_selectedServer?.StatusUrl, token), () => WindowActive);
         _statusPolling.StatusChanged += OnServerStatusChanged;
         LoginCommand = new AsyncCommand(LoginAsync, () => !Busy && AuthConfigured);
         LogoutCommand = new AsyncCommand(LogoutAsync, () => !Busy && _session is not null);
@@ -76,10 +90,27 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     /// The main screen shows the server's name, not its address. This is presentation, not
     /// protection: the address is a compile-time constant and readable straight out of the binary.
     /// </summary>
-    public string ServerName => LauncherConfig.ServerName;
+    public string ServerName => _selectedServer?.Name ?? LauncherConfig.ServerName;
 
     /// <summary>Kept for the About window and logs, where knowing the endpoint helps support.</summary>
-    public string ServerEndpoint => $"{LauncherConfig.ServerIp}:{LauncherConfig.ServerPort}";
+    public string ServerEndpoint => _selectedServer is { } server
+        ? ServerCatalog.JoinAddress(server)
+        : $"{LauncherConfig.ServerIp}:{LauncherConfig.ServerPort}";
+
+    public IReadOnlyList<ServerEntry> Servers => _servers;
+    public bool HasMultipleServers => _servers.Count > 1;
+
+    /// <summary>Picking another server while idle switches the saved selection and the status polling.</summary>
+    public ServerEntry? SelectedServer
+    {
+        get => _selectedServer;
+        set
+        {
+            // The combo box writes null while its items are being replaced; that is not a user choice.
+            if (value is null) return;
+            _ = SelectServerAsync(value);
+        }
+    }
     public LauncherSettings Settings => _settings;
     public bool WindowActive { get => _windowActive; set => SetProperty(ref _windowActive, value); }
     public string ServerStatus { get => _serverStatus; private set => SetProperty(ref _serverStatus, value); }
@@ -125,16 +156,23 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
             Status = "설정을 불러오는 중...";
             _settings = await _settingsManager.LoadAsync(_lifetime.Token);
             RaisePropertyChanged(nameof(Settings));
+            var content = _contentFactory(string.IsNullOrWhiteSpace(_settings.InstallPath)
+                ? _paths.DefaultGameDir : _settings.InstallPath);
+            var cached = await content.TryLoadCacheAsync(_lifetime.Token)
+                ?? LauncherServers.Normalize(new ServerDistribution());
+            SetServers(cached, _settings.SelectedServerId);
             _session = await _auth.TryRestoreAsync(_lifetime.Token);
             _discord = new DiscordPresenceService(LauncherConfig.DiscordClientId, LauncherConfig.EnableDiscordRpc,
                 _settings.DiscordRpcEnabled, () => new DiscordRpcClientAdapter(),
                 (message, exception) => _ = _logger.WriteAsync(LauncherLogLevel.Warn, message, exception));
+            ApplyDiscordServer();
             _discord.Init();
             _discord.SetState(_session is null ? DiscordPresenceState.LauncherOpen : DiscordPresenceState.Ready);
             Account = _session?.Username ?? "로그인하지 않음";
             Status = _session is not null ? "게임을 시작할 수 있습니다."
                 : AuthConfigured ? "로그인이 필요합니다."
                 : "로그인 설정이 필요합니다.";
+            _ = RefreshServersAsync(content);
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
         catch (Exception exception)
@@ -149,6 +187,96 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// One startup fetch of the live manifest. It only refreshes the on-screen list: the cache file
+    /// keeps meaning "last verified content", so nothing is saved here.
+    /// </summary>
+    private async Task RefreshServersAsync(IContentUpdateService content)
+    {
+        try
+        {
+            var fetched = await content.FetchAsync(_lifetime.Token);
+            var previous = _selectedServer;
+            SetServers(fetched, previous?.Id);
+            ApplyDiscordServer();
+            if (previous?.Id != _selectedServer?.Id || previous?.StatusUrl != _selectedServer?.StatusUrl)
+            {
+                await _serverSwitch.WaitAsync(_lifetime.Token);
+                try { await RestartStatusPollingAsync(); }
+                finally { _serverSwitch.Release(); }
+            }
+        }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
+        catch (Exception exception)
+        {
+            await _logger.WriteAsync(LauncherLogLevel.Warn, "Server list refresh failed; keeping the cached list", exception);
+        }
+    }
+
+    private void SetServers(ServerDistribution manifest, string? preferredId)
+    {
+        _servers = manifest.Servers;
+        _selectedServer = ServerCatalog.Select(manifest, preferredId);
+        RaisePropertyChanged(nameof(Servers));
+        RaisePropertyChanged(nameof(HasMultipleServers));
+        RaisePropertyChanged(nameof(SelectedServer));
+        RaisePropertyChanged(nameof(ServerName));
+        RaisePropertyChanged(nameof(ServerEndpoint));
+    }
+
+    private void ApplyDiscordServer()
+    {
+        if (_selectedServer is not { } server) return;
+        _discord?.SetServer(server.Discord?.Details ?? server.Name, server.Discord?.LargeImageKey);
+    }
+
+    private async Task SelectServerAsync(ServerEntry server)
+    {
+        if (Busy)
+        {
+            RaisePropertyChanged(nameof(SelectedServer));
+            return;
+        }
+        if (string.Equals(server.Id, _selectedServer?.Id, StringComparison.Ordinal)) return;
+        _selectedServer = server;
+        _settings.SelectedServerId = server.Id;
+        RaisePropertyChanged(nameof(SelectedServer));
+        RaisePropertyChanged(nameof(ServerName));
+        RaisePropertyChanged(nameof(ServerEndpoint));
+        ApplyDiscordServer();
+        try
+        {
+            // One switch at a time: polling restarts and settings writes never overlap.
+            await _serverSwitch.WaitAsync(_lifetime.Token);
+            try
+            {
+                await RestartStatusPollingAsync();
+                await SaveSettingsAsync();
+            }
+            finally { _serverSwitch.Release(); }
+        }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
+        catch (Exception exception)
+        {
+            await _logger.WriteAsync(LauncherLogLevel.Warn, "Switching the selected server failed", exception);
+        }
+    }
+
+    /// <summary>
+    /// Stops the running poll, then starts one for the current server. Posted results from the
+    /// previous poll are dropped through the generation counter so they never label the new server.
+    /// Callers hold <see cref="_serverSwitch"/>.
+    /// </summary>
+    private async Task RestartStatusPollingAsync()
+    {
+        await _statusPolling.StopAsync();
+        Interlocked.Increment(ref _statusGeneration);
+        ServerOnline = false;
+        ServerStatus = "서버 확인 중...";
+        ServerMotd = string.Empty;
+        _statusPolling.Start();
+    }
+
     public async Task SaveSettingsAsync(CancellationToken cancellationToken = default)
     {
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token, cancellationToken);
@@ -158,7 +286,8 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     }
 
     public SettingsViewModel CreateSettingsViewModel() =>
-        new(_settings, cancellationToken => SaveSettingsAsync(cancellationToken), _paths);
+        new(_settings, cancellationToken => SaveSettingsAsync(cancellationToken), _paths,
+            _selectedServer?.Id ?? ServerCatalog.LegacyServerId);
 
     public async Task LoginAsync()
     {
@@ -349,8 +478,10 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     private string DescribeGameExit()
     {
         if (ReadExitCode() is not { } code || code == 0) return "게임이 종료되었습니다.";
-        var gameDirectory = Path.GetFullPath(string.IsNullOrWhiteSpace(_settings.InstallPath)
-            ? _paths.DefaultGameDir : _settings.InstallPath);
+        // The server cannot change while a game runs (switching is blocked while busy).
+        var gameDirectory = LauncherServers.GameDirectoryFor(
+            string.IsNullOrWhiteSpace(_settings.InstallPath) ? _paths.DefaultGameDir : _settings.InstallPath,
+            _selectedServer?.Id ?? ServerCatalog.LegacyServerId);
         try { return DescribeAbnormalExit(code, gameDirectory); }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -367,14 +498,23 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         _discord?.SetState(DiscordPresenceState.Ready);
     });
 
-    private void OnServerStatusChanged(object? sender, ServerStatusInfo status) => Dispatcher.UIThread.Post(() =>
+    private void OnServerStatusChanged(object? sender, ServerStatusInfo status)
+    {
+        var generation = Volatile.Read(ref _statusGeneration);
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (generation == Volatile.Read(ref _statusGeneration)) ApplyServerStatus(status);
+        });
+    }
+
+    private void ApplyServerStatus(ServerStatusInfo status)
     {
         ServerOnline = status.RequestSucceeded && status.IsOnline;
         ServerStatus = status.RequestSucceeded
             ? status.IsOnline ? $"온라인 · {status.OnlinePlayers ?? 0}/{status.MaxPlayers ?? 0}명" : "오프라인"
             : "상태 확인 불가";
         ServerMotd = status.Motd;
-    });
+    }
 
     private void NotifyCommandStates()
     {
@@ -415,6 +555,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         await _statusPolling.DisposeAsync();
         DetachGameProcess();
         _statusHttpClient.Dispose();
+        _contentHttpClient.Dispose();
         _discord?.Dispose();
         _launcher.Dispose();
         _currentOperation?.Dispose();

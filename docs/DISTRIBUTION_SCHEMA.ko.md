@@ -16,6 +16,75 @@
   소유하지 않은 기존 파일은 업데이트 대상이 아니라 충돌로 처리되므로, 서버 매니페스트가
   침해되더라도 플레이어가 직접 넣은 드롭인 콘텐츠는 보존됩니다.
 
+## 서버 목록 (여러 서버)
+
+매니페스트의 최상위 `servers` 배열에 서버를 여러 개 담을 수 있습니다. 플레이어는 런처에서
+서버를 골라 접속합니다. 각 항목의 필드는 다음과 같습니다.
+
+| 필드 | 필수 | 설명 |
+|---|---|---|
+| `id` | 예 | 영문 소문자·숫자 kebab-case(`^[a-z0-9]+(-[a-z0-9]+)*$`)이며, 매니페스트 안에서 중복될 수 없습니다. 플레이어가 고른 서버와 서버별 설정의 키입니다. |
+| `name` | 예 | 런처 화면과 서버 목록에 표시되는 이름입니다. |
+| `address` | 예 | 서버 주소입니다. |
+| `port` | 아니요 | 1~65535이며, 생략하면 25565입니다. |
+| `minecraftVersion` | 예 | 마인크래프트 버전입니다(예: `1.20.1`). |
+| `modLoader` | 예 | `type`과 `version`을 담은 객체입니다. `type`은 `forge`·`fabric`·`neoforge`·`quilt`·`vanilla`(소문자)입니다. `vanilla` 외에는 `version`이 필수입니다. `neoforge`와 `quilt`는 스키마 검증은 통과하지만, 실행하면 "지원하지 않는 모드 로더" 오류가 표시됩니다. 설치 지원은 아직 없습니다. |
+| `java` | 예 | `minVersion`, `recommendedVersion`, 선택 항목 `minRamMb`입니다. 단일 서버 형식의 최상위 `java`와 같은 구조입니다. |
+| `modules` | 예 | 위 모듈 규칙을 따르는 모듈 목록입니다. |
+| `discord` | 아니요 | 선택 항목 `details`·`state`·`largeImageKey`입니다. `details`를 지정하면 Discord 상태에서 서버 이름 대신 이 값이 표시됩니다. `state`는 예약된 필드로, 현재 런처는 사용하지 않습니다. |
+| `statusUrl` | 아니요 | 서버 상태 확인에 쓰는 절대 `https` URL입니다. 생략하면 런처에 빌드된 기본 상태 API를 씁니다. |
+
+서버마다 게임 폴더가 따로 있습니다. 서버 `id`가 `default`인 서버(옛 단일 서버 형식 포함)는 설정의 게임 폴더를 그대로 쓰고, 그 밖의 서버는 `{게임 폴더}/instances/{서버 id}`를 게임 폴더로 씁니다. 그래서 mods·셰이더팩·리소스팩·options·servers.dat·logs·crash-reports·saves가 서버마다 따로 저장됩니다. Minecraft 공유 파일(libraries·versions·assets), 매니페스트 캐시, Java 런타임은 공유합니다. 오프라인 실행 가능 여부는 서버 폴더마다 따로 판정합니다. 플레이어가 다른 서버로 바꿔 실행하면 서버 관리 모듈이 새로 선택한 서버 기준으로 다시 동기화됩니다. 서버 선택 목록은 서버가 둘 이상일 때만 보입니다.
+
+```json
+{
+  "serverId": "",
+  "servers": [
+    {
+      "id": "main",
+      "name": "DOG'S SERVER",
+      "address": "play.example.com",
+      "minecraftVersion": "1.20.1",
+      "modLoader": { "type": "fabric", "version": "0.15.11" },
+      "java": { "minVersion": "17", "recommendedVersion": "17", "minRamMb": 4096 },
+      "modules": [
+        {
+          "id": "mods/a",
+          "path": "mods/a.jar",
+          "url": "https://example.com/pack/mods/a.jar",
+          "hash": "9b2f4c1e7a0d35f86b1c9e2a4d7f0b3c6e8a1d5f2b9c4e7a0d3f6b1c8e5a2d4f",
+          "type": "RequiredMod",
+          "parentId": null,
+          "loadOrder": null
+        }
+      ],
+      "discord": { "details": "Playing DOG'S SERVER" }
+    },
+    {
+      "id": "creative",
+      "name": "DOG'S CREATIVE",
+      "address": "creative.example.com",
+      "port": 25566,
+      "minecraftVersion": "1.20.1",
+      "modLoader": { "type": "forge", "version": "47.3.0" },
+      "java": { "minVersion": "17", "recommendedVersion": "17" },
+      "modules": [
+        {
+          "id": "mods/b",
+          "path": "mods/b.jar",
+          "url": "https://example.com/pack/mods/b.jar",
+          "hash": "c41e8a0f5d2b7c93e6a1f4d08b5c2e7a9f3d6b1e4c8a0d2f7b5e9c3a6d1f4b80",
+          "type": "OptionalMod",
+          "parentId": null,
+          "loadOrder": null
+        }
+      ],
+      "statusUrl": "https://status.example.com/creative"
+    }
+  ]
+}
+```
+
 ## 파일 호스팅
 
 각 모듈을 **정식 인증서로 HTTPS 제공**하기만 하면 어떤 호스트든 됩니다. 런처는 리디렉션을
@@ -46,6 +115,24 @@
 두 URL 옵션 모두 맞지 않으면 둘 다 생략합니다. 그러면 생성기가 각 모듈에 이미 기록된 URL을
 유지하고 해시만 갱신하므로, 손으로 넣은 링크가 재생성 후에도 남습니다. URL은 모듈별로
 저장되므로 서로 다른 호스트를 섞어 쓸 수도 있습니다.
+
+## 호환성
+
+- `servers` 배열이 없거나 비어 있는 매니페스트는 단일 서버 형식입니다. 런처는 런처에 빌드된 값
+  (`LauncherConfig`의 서버 이름·주소·포트·Minecraft 버전·로더)과 최상위 `modules`·`java`로 서버
+  하나를 만들며, id는 `default`가 됩니다.
+- `servers`와 최상위 `modules`를 함께 쓰면 거부합니다.
+- 잘못된 서버 항목 하나(빈 값이나 형식이 틀린 id, 중복 id, 알 수 없는 로더 type, 필수 필드 누락,
+  `http` statusUrl)가 있어도 매니페스트 전체를 거부합니다. 캐시에 남은 옛 매니페스트도 같은 규칙으로
+  읽힙니다.
+- 새 형식에서는 최상위 `serverId`를 빈 문자열로 둡니다(매니페스트 도구가 그렇게 저장합니다).
+  `servers`를 모르는 옛 런처는 이 매니페스트를 거부하므로, 빈 모듈 목록으로 모드를 지우지 않습니다.
+  운영자는 새 버전 런처를 먼저 배포한 뒤 매니페스트를 새 형식으로 바꿔야 합니다.
+- 플레이어 설정: 선택한 서버 id(`selectedServerId`)와 서버별로 끈 선택 모듈
+  (`disabledOptionalModuleIdsByServer`)을 저장합니다. 옛 설정의 끈 모듈 목록은 첫 실행 때
+  `default` 서버로 옮겨집니다. 저장된 id가 목록에 없으면 첫 서버가 선택됩니다.
+- 명령줄: `generate --existing`은 `servers`가 있는 매니페스트를 거부합니다(도구 창에서 편집).
+  `diff`는 `servers`가 있으면 변경 항목 앞에 `[id]`를 붙입니다.
 
 ## 매니페스트 도구
 

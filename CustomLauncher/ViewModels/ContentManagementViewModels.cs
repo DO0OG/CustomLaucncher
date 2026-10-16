@@ -134,12 +134,17 @@ public sealed class ModuleManagementViewModel : ContentTabViewModel
     private readonly IContentUpdateService _content;
     private readonly DropInModManager _dropIns;
     private readonly ModuleSelectionStore _settings;
+    private ServerDistribution? _manifest;
+    private ServerEntry? _server;
     private ServerDistribution? _distribution;
     private DropInModItem? _selectedDropIn;
     private bool _suppressToggle;
 
     /// <summary>Reads and persists the disabled-module set without coupling this VM to the settings file.</summary>
-    public sealed record ModuleSelectionStore(Func<List<string>> GetDisabled, Func<CancellationToken, Task> SaveAsync);
+    public sealed record ModuleSelectionStore(
+        Func<string, List<string>> GetDisabled,
+        Func<CancellationToken, Task> SaveAsync,
+        Func<string?> SelectedServerId);
 
     public ModuleManagementViewModel(
         IContentUpdateService content,
@@ -187,7 +192,9 @@ public sealed class ModuleManagementViewModel : ContentTabViewModel
     public async Task RefreshAsync() => await RunAsync(async token =>
     {
         Message = "매니페스트를 확인하는 중...";
-        _distribution = await _content.FetchAsync(token);
+        _manifest = await _content.FetchAsync(token);
+        _server = ServerCatalog.Select(_manifest, _settings.SelectedServerId());
+        _distribution = ServerCatalog.ForServer(_manifest, _server);
         BuildModuleList();
         await RefreshDropInsAsync(token);
         Message = $"모듈 {Modules.Count}개를 확인했습니다.";
@@ -195,14 +202,14 @@ public sealed class ModuleManagementViewModel : ContentTabViewModel
 
     public async Task UpdateAsync() => await RunAsync(async token =>
     {
-        if (_distribution is null)
+        if (_distribution is null || _manifest is null || _server is null)
         {
             Message = "먼저 매니페스트를 확인해 주세요.";
             return;
         }
 
         Message = "콘텐츠를 동기화하는 중...";
-        var selected = ModuleSelection.Filter(_distribution, _settings.GetDisabled());
+        var selected = ModuleSelection.Filter(_distribution, _settings.GetDisabled(_server.Id));
         var result = await _content.UpdateAsync(selected, token);
         Message = result.Status switch
         {
@@ -213,7 +220,7 @@ public sealed class ModuleManagementViewModel : ContentTabViewModel
             _ => "알 수 없는 동기화 결과입니다.",
         };
         if (result.Status is ModuleUpdateStatus.Updated or ModuleUpdateStatus.UpToDate)
-            await _content.SaveCacheAsync(selected, token);
+            await _content.SaveCacheAsync(_manifest, token);
         await RefreshDropInsAsync(token);
     });
 
@@ -281,8 +288,8 @@ public sealed class ModuleManagementViewModel : ContentTabViewModel
     {
         foreach (var existing in Modules) existing.EnabledChanged -= OnModuleEnabledChanged;
         Modules.Clear();
-        if (_distribution is null) return;
-        var disabled = _settings.GetDisabled();
+        if (_distribution is null || _server is null) return;
+        var disabled = _settings.GetDisabled(_server.Id);
         var byParent = _distribution.Modules
             .GroupBy(module => module.ParentId ?? string.Empty, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.Ordinal);
@@ -313,7 +320,7 @@ public sealed class ModuleManagementViewModel : ContentTabViewModel
         if (_suppressToggle || sender is not ModuleListItem item) return;
         try
         {
-            var disabled = _settings.GetDisabled();
+            var disabled = _settings.GetDisabled(_server!.Id);
             if (item.IsEnabled) disabled.Remove(item.Id);
             else if (!disabled.Contains(item.Id)) disabled.Add(item.Id);
             RecalculateEffectiveState();
@@ -329,8 +336,8 @@ public sealed class ModuleManagementViewModel : ContentTabViewModel
     /// <summary>Greys out modules whose ancestor is switched off.</summary>
     private void RecalculateEffectiveState()
     {
-        if (_distribution is null) return;
-        var effective = ModuleSelection.ResolveDisabled(_distribution, _settings.GetDisabled());
+        if (_distribution is null || _server is null) return;
+        var effective = ModuleSelection.ResolveDisabled(_distribution, _settings.GetDisabled(_server.Id));
         _suppressToggle = true;
         try
         {

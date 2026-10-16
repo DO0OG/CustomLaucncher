@@ -9,7 +9,6 @@ namespace CustomLauncher.ManifestTool;
 public sealed class ToolSettings
 {
     public string SourceDirectory { get; set; } = string.Empty;
-    public string ServerId { get; set; } = string.Empty;
     public string UrlTemplate { get; set; } = string.Empty;
     public string OutputPath { get; set; } = string.Empty;
     public bool MergeWithExisting { get; set; } = true;

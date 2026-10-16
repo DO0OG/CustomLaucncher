@@ -1,6 +1,7 @@
 using CustomLauncher.Core;
 using CustomLauncher.Core.Java;
 using CustomLauncher.Models;
+using CustomLauncher.Shared.Models;
 
 namespace CustomLauncher.ViewModels;
 
@@ -17,7 +18,8 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
     private bool _closeLauncherOnGameStart;
     private string _validationMessage = string.Empty;
 
-    public SettingsViewModel(LauncherSettings target, Func<CancellationToken, Task> save, AppPaths? paths = null)
+    public SettingsViewModel(LauncherSettings target, Func<CancellationToken, Task> save, AppPaths? paths = null,
+        string? serverId = null)
     {
         _target = target;
         _save = save;
@@ -35,6 +37,8 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
 
         // Content tabs need a live game directory; they are only built for the real app.
         var installPath = string.IsNullOrWhiteSpace(target.InstallPath) ? paths.DefaultGameDir : target.InstallPath;
+        var contentServerId = serverId ?? ServerCatalog.LegacyServerId;
+        var gameDirectory = LauncherServers.GameDirectoryFor(installPath, contentServerId);
         var editor = new OptionsTextEditor();
         _ownedHttpClient = new HttpClient();
         _ownedHttpClient.DefaultRequestHeaders.UserAgent.ParseAdd(LauncherConfig.UserAgent);
@@ -44,24 +48,29 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
         Java = new JavaSettingsViewModel(
             target.Java,
             install: installer.InstallAsync,
-            requirementSource: async token => (await content.TryLoadCacheAsync(token))?.Java);
+            requirementSource: async token =>
+            {
+                var manifest = await content.TryLoadCacheAsync(token);
+                return manifest is null ? null : ServerCatalog.Select(manifest, contentServerId).Java;
+            });
 
         Modules = new ModuleManagementViewModel(
             content,
-            new DropInModManager(Path.Combine(installPath, LauncherConfig.ModsFolderName)),
+            new DropInModManager(Path.Combine(gameDirectory, LauncherConfig.ModsFolderName)),
             new ModuleManagementViewModel.ModuleSelectionStore(
-                () => _target.DisabledOptionalModuleIds,
-                async token => { await SaveAsync(token); }));
+                serverId => _target.DisabledModulesFor(serverId),
+                async token => { await SaveAsync(token); },
+                () => contentServerId));
 
         Shaders = new ShaderPackViewModel(new ShaderPackManager(
-            Path.Combine(installPath, LauncherConfig.ShaderPackFolderName),
-            Path.Combine(installPath, LauncherConfig.ShaderSettingsFileName),
+            Path.Combine(gameDirectory, LauncherConfig.ShaderPackFolderName),
+            Path.Combine(gameDirectory, LauncherConfig.ShaderSettingsFileName),
             LauncherConfig.ShaderSettingsKey,
             editor));
 
         ResourcePacks = new ResourcePackViewModel(new ResourcePackManager(
-            Path.Combine(installPath, LauncherConfig.ResourcePackFolderName),
-            Path.Combine(installPath, LauncherConfig.GameOptionsFileName),
+            Path.Combine(gameDirectory, LauncherConfig.ResourcePackFolderName),
+            Path.Combine(gameDirectory, LauncherConfig.GameOptionsFileName),
             editor));
     }
 

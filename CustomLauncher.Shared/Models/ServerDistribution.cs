@@ -13,4 +13,5 @@ public sealed class ServerDistribution
     public List<DistroModule> Modules { get; set; } = [];
     public JavaRequirement Java { get; set; } = new();
     public string? DefaultShaderPackId { get; set; }
+    public List<ServerEntry> Servers { get; set; } = [];
 }

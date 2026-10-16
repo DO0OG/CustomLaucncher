@@ -12,7 +12,9 @@ public static class DiffCommand
 
         var existing = await ReadAsync(args[0], cancellationToken);
         var candidate = await ReadAsync(args[1], cancellationToken);
-        var changes = Compare(existing, candidate);
+        var changes = existing.Servers.Count > 0 || candidate.Servers.Count > 0
+            ? CompareServers(existing, candidate)
+            : Compare(existing, candidate);
 
         if (changes.Count == 0)
         {
@@ -49,6 +51,52 @@ public static class DiffCommand
 
         if (!JsonEquals(existing.Java, candidate.Java))
             changes.Add("~ java requirement");
+        return changes;
+    }
+
+    /// <summary>
+    /// Compares two manifests server by server, prefixing each line with <c>[server-id]</c>. A
+    /// single-server manifest counts as one server, so old and new formats can be compared.
+    /// </summary>
+    public static IReadOnlyList<string> CompareServers(ServerDistribution existing, ServerDistribution candidate)
+    {
+        var legacy = new ServerEntry { Id = ServerCatalog.LegacyServerId };
+        var oldManifest = ServerCatalog.Normalize(existing, legacy);
+        var newManifest = ServerCatalog.Normalize(candidate, legacy);
+        var oldServers = oldManifest.Servers.ToDictionary(server => server.Id, StringComparer.Ordinal);
+        var newServers = newManifest.Servers.ToDictionary(server => server.Id, StringComparer.Ordinal);
+
+        var changes = new List<string>();
+        if (!string.Equals(existing.DefaultShaderPackId, candidate.DefaultShaderPackId, StringComparison.Ordinal))
+            changes.Add($"~ defaultShaderPackId: {Display(existing.DefaultShaderPackId)} -> {Display(candidate.DefaultShaderPackId)}");
+
+        foreach (var id in oldServers.Keys.Concat(newServers.Keys.Except(oldServers.Keys, StringComparer.Ordinal)))
+        {
+            if (!newServers.TryGetValue(id, out var after))
+            {
+                changes.Add($"[{id}] - server");
+                continue;
+            }
+
+            if (!oldServers.TryGetValue(id, out var before))
+            {
+                changes.Add($"[{id}] + server");
+                continue;
+            }
+
+            if ((before.Name, before.Address, before.Port, before.MinecraftVersion, before.ModLoader.Type,
+                    before.ModLoader.Version, before.StatusUrl) !=
+                (after.Name, after.Address, after.Port, after.MinecraftVersion, after.ModLoader.Type,
+                    after.ModLoader.Version, after.StatusUrl))
+                changes.Add($"[{id}] ~ server settings");
+            var oldServer = ServerCatalog.ForServer(oldManifest, before);
+            var newServer = ServerCatalog.ForServer(newManifest, after);
+            // The shader pack is manifest-wide and is reported once above, not once per server.
+            oldServer.DefaultShaderPackId = null;
+            newServer.DefaultShaderPackId = null;
+            changes.AddRange(Compare(oldServer, newServer).Select(change => $"[{id}] {change}"));
+        }
+
         return changes;
     }
 

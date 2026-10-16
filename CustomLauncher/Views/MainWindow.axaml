@@ -40,6 +40,16 @@
           <TextBlock Text="·" Classes="muted" VerticalAlignment="Center" />
           <TextBlock Text="{Binding ServerStatus}" Classes="muted" VerticalAlignment="Center" />
         </StackPanel>
+        <!-- Only on screen when the manifest lists more than one server. -->
+        <ComboBox ItemsSource="{Binding Servers}" SelectedItem="{Binding SelectedServer, Mode=TwoWay}"
+                  IsVisible="{Binding HasMultipleServers}" IsEnabled="{Binding !Busy}"
+                  MinWidth="200" HorizontalAlignment="Center">
+          <ComboBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Name}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
         <TextBlock Text="{Binding ServerMotd}" Classes="muted" TextWrapping="Wrap" MaxHeight="40"
                    HorizontalAlignment="Center" TextAlignment="Center" />
       </StackPanel>

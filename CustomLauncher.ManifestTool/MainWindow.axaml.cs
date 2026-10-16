@@ -14,6 +14,10 @@ public partial class MainWindow : Window
             if (DataContext is ManifestToolViewModel viewModel)
                 viewModel.FolderPicker = PickFolderAsync;
         };
+        Opened += async (_, _) =>
+        {
+            if (DataContext is ManifestToolViewModel viewModel) await viewModel.LoadAsync(startup: true);
+        };
     }
 
     private async Task<string?> PickFolderAsync()
@@ -29,6 +33,22 @@ public partial class MainWindow : Window
     private async void BrowseClicked(object? sender, RoutedEventArgs e)
     {
         if (DataContext is ManifestToolViewModel viewModel) await viewModel.BrowseAsync();
+    }
+
+    private void AddServerClicked(object? sender, RoutedEventArgs e) =>
+        (DataContext as ManifestToolViewModel)?.AddServer();
+
+    private void RemoveServerClicked(object? sender, RoutedEventArgs e) =>
+        (DataContext as ManifestToolViewModel)?.RemoveServer();
+
+    private async void LoadClicked(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is ManifestToolViewModel viewModel) await viewModel.LoadAsync();
+    }
+
+    private async void SaveClicked(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is ManifestToolViewModel viewModel) await viewModel.SaveAsync();
     }
 
     private async void GenerateClicked(object? sender, RoutedEventArgs e)

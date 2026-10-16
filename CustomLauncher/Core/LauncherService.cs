@@ -65,8 +65,6 @@ public sealed class LauncherService : ILauncherService
         var option = new MLaunchOption
         {
             Session = session,
-            ServerIp = LauncherConfig.ServerIp,
-            ServerPort = LauncherConfig.ServerPort,
             ScreenWidth = settings.Resolution.Width,
             ScreenHeight = settings.Resolution.Height,
             FullScreen = settings.FullScreen,
@@ -96,9 +94,10 @@ public sealed class LauncherService : ILauncherService
         _javaProvisioner = new JavaProvisioningService(new AppPaths().RuntimeDir);
         _preparer = new GameSessionPreparer(content, modLoader, new CmlGameRuntime(_launcher),
             new ConsentAwareJavaProvisioner(_javaProvisioner, () => _activeSettings?.Java.AutoInstallEnabled == true),
-            () => _activeSettings?.DisabledOptionalModuleIds ?? [],
+            id => _activeSettings?.DisabledModulesFor(id) ?? [],
             new ServerListWriter(),
-            path);
+            path,
+            () => _activeSettings?.SelectedServerId);
     }
 
     private LauncherSettings? _activeSettings;

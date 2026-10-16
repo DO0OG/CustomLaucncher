@@ -353,9 +353,11 @@ public sealed class JavaInstaller
         }
         catch (IOException)
         {
+            /* 임시 파일 정리 실패는 무시합니다. */
         }
         catch (UnauthorizedAccessException)
         {
+            /* 임시 파일 정리 실패는 무시합니다. */
         }
     }
 
@@ -370,9 +372,11 @@ public sealed class JavaInstaller
         }
         catch (IOException)
         {
+            /* 임시 디렉터리 정리 실패는 무시합니다. */
         }
         catch (UnauthorizedAccessException)
         {
+            /* 임시 디렉터리 정리 실패는 무시합니다. */
         }
     }
 

@@ -361,7 +361,7 @@ public sealed class ModuleManager
     private static void TryDeleteDirectory(string path)
     {
         try { if (Directory.Exists(path)) Directory.Delete(path, true); }
-        catch (IOException) { }
-        catch (UnauthorizedAccessException) { }
+        catch (IOException) { /* 디렉터리 정리 실패는 무시합니다. */ }
+        catch (UnauthorizedAccessException) { /* 디렉터리 정리 실패는 무시합니다. */ }
     }
 }

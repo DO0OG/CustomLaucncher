@@ -46,6 +46,12 @@ Linux for every pull request. The suite is 151 tests covering:
 - Discord Details includes the server name.
 - Manifest tool: hashing, merge preservation, semantic diff, URL templating, and the tool window's
   validation/defaults/change-report.
+- File repair: only files whose disk hash differs or that are missing are re-downloaded; if any download
+  fails, existing files are kept.
+- Archive hash records: the archive hash and extracted-file hashes are stored and compared; an install
+  without a record re-downloads once.
+- Game log buffer: the 500-line cap and batched UI updates at 100 ms.
+- Log folder path calculation under the game folder's `logs` directory.
 
 These are isolated tests with fakes and temporary files; they are not end-to-end launches.
 
@@ -89,6 +95,9 @@ automated.
 | Multi-server: `default` keeps the existing game folder, other servers use `instances/{id}`, offline check per server | Required | Required | Required |
 | Old single-server manifest and old settings still load (id `default`) | Required | Required | Required |
 | Server selector is hidden when the manifest has one server | Required | Required | Required |
+| File verification and repair: after one file is tampered with or deleted, the button re-downloads only that file, shows "verified n, repaired m", and keeps existing files when the network is blocked | Required | Required | Required |
+| Archive module: an existing install with no record re-downloads once on first run | Required | Required | Required |
+| Game log area: shows output while running (latest 500 lines), window stays responsive under heavy output, and "Open log folder" opens the `logs` folder in the OS file explorer | Required | Required | Required |
 
 Public release still needs the real distribution endpoint filled in, target-OS machines, and
 signing credentials (Windows certificate, Apple Developer signing/notarization). Shader settings must

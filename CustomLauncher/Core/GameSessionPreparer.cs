@@ -40,10 +40,8 @@ public sealed class GameSessionPreparer(
         {
             progress?.Report(new LaunchProgress("매니페스트 조회", 0));
             manifest = await content.FetchAsync(cancellationToken);
-            server = ServerCatalog.Select(manifest, selectedServerId?.Invoke());
             // Honour the user's optional-module choices before touching the game directory.
-            distribution = ModuleSelection.Filter(
-                ServerCatalog.ForServer(manifest, server), disabledOptionalModules?.Invoke(server.Id));
+            (server, distribution) = SelectDistribution(manifest);
             progress?.Report(new LaunchProgress("콘텐츠 동기화", 0));
             var update = await content.UpdateAsync(distribution, cancellationToken);
             switch (update.Status)
@@ -65,11 +63,9 @@ public sealed class GameSessionPreparer(
         {
             manifest = await content.TryLoadCacheAsync(cancellationToken)
                 ?? throw new InvalidOperationException("최초 콘텐츠 동기화가 필요하지만 매니페스트에 연결할 수 없습니다.", exception);
-            server = ServerCatalog.Select(manifest, selectedServerId?.Invoke());
+            (server, distribution) = SelectDistribution(manifest);
             if (!content.HasManagedState(server.Id))
                 throw new InvalidOperationException("검증된 로컬 콘텐츠 상태가 없어 오프라인으로 실행할 수 없습니다.", exception);
-            distribution = ModuleSelection.Filter(
-                ServerCatalog.ForServer(manifest, server), disabledOptionalModules?.Invoke(server.Id));
             warning = "네트워크에 연결할 수 없어 마지막으로 검증된 콘텐츠로 실행합니다.";
             progress?.Report(new LaunchProgress("오프라인 콘텐츠 사용", 1, warning));
         }
@@ -100,5 +96,21 @@ public sealed class GameSessionPreparer(
         var process = await runtime.CreateProcessAsync(targetVersion, launchOption, cancellationToken);
         progress?.Report(new LaunchProgress("실행 준비 완료", 1));
         return new PreparedGameSession(process, distribution, targetVersion, warning);
+    }
+
+    /// <summary>Re-verifies every managed file of the selected server; there is no offline fallback.</summary>
+    public async Task<ModuleUpdateResult> RepairAsync(IProgress<LaunchProgress>? progress, CancellationToken cancellationToken)
+    {
+        progress?.Report(new LaunchProgress("매니페스트 조회", 0));
+        var manifest = await content.FetchAsync(cancellationToken);
+        var (_, distribution) = SelectDistribution(manifest);
+        return await content.RepairAsync(distribution, progress, cancellationToken);
+    }
+
+    private (ServerEntry Server, ServerDistribution Distribution) SelectDistribution(ServerDistribution manifest)
+    {
+        var server = ServerCatalog.Select(manifest, selectedServerId?.Invoke());
+        return (server, ModuleSelection.Filter(
+            ServerCatalog.ForServer(manifest, server), disabledOptionalModules?.Invoke(server.Id)));
     }
 }

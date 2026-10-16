@@ -230,6 +230,8 @@ public sealed class ContentTabViewModelTests : IDisposable
             throw new HttpRequestException("연결할 수 없습니다.");
         public Task<ModuleUpdateResult> UpdateAsync(ServerDistribution distribution, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
+        public Task<ModuleUpdateResult> RepairAsync(ServerDistribution distribution, IProgress<LaunchProgress>? progress, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
         public Task SaveCacheAsync(ServerDistribution distribution, CancellationToken cancellationToken) =>
             Task.CompletedTask;
         public Task<ServerDistribution?> TryLoadCacheAsync(CancellationToken cancellationToken) =>
@@ -268,6 +270,9 @@ public sealed class ContentTabViewModelTests : IDisposable
             LastUpdated = distribution;
             return Task.FromResult(result);
         }
+
+        public Task<ModuleUpdateResult> RepairAsync(ServerDistribution distribution, IProgress<LaunchProgress>? progress, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
 
         public Task SaveCacheAsync(ServerDistribution distribution, CancellationToken cancellationToken)
         {

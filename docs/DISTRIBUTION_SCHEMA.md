@@ -9,6 +9,7 @@ produced by the manifest tool (`CustomLauncher.ManifestTool`) and read by the la
 
 - Every module is a single file by default. Only modules that need extracting set `packaging` to an
   archive value; extraction is never inferred from a filename.
+- The launcher stores the archive's original SHA-256 and each extracted file's SHA-256 in its install record (`.launcher-managed-modules.json`). An existing install without that record re-downloads its archive modules once after the update. The manifest format is unchanged.
 - All download URLs must be HTTPS. All install paths are relative to the game root.
 - Before writing anything, the updater rejects: rooted paths, `..` traversal segments, link entries,
   invalid SHA-256, duplicate ids or paths, dependency cycles, and archive size/entry limits.

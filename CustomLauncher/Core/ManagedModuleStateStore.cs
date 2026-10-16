@@ -15,6 +15,8 @@ public sealed class ManagedModuleRecord
 {
     public string Hash { get; set; } = string.Empty;
     public List<string> Paths { get; set; } = [];
+    public string? ArchiveHash { get; set; }
+    public Dictionary<string, string>? FileHashes { get; set; }
 }
 
 public sealed class ManagedModuleStateStore

@@ -155,6 +155,36 @@ public sealed class GameSessionPreparerTests
         Assert.Equal(["fetch"], calls);
     }
 
+    [Fact]
+    public async Task RepairAsync_AppliesSelectedServerAndOptionalModuleFilter()
+    {
+        var calls = new List<string>();
+        var manifest = TwoServers();
+        manifest.Servers[1].Modules = [RepairModule("core", ModuleType.RequiredMod), RepairModule("extra", ModuleType.OptionalMod)];
+        var failed = new ModuleUpdateResult(ModuleUpdateStatus.Failed, [], "repair failed");
+        var content = new FakeContent(calls, manifest, failed);
+        var preparer = new GameSessionPreparer(content, new FakeLoader(calls, "unused"), new FakeRuntime(calls),
+            disabledOptionalModules: id => id == "b" ? ["extra"] : [],
+            selectedServerId: () => "b");
+
+        var result = await preparer.RepairAsync(null, CancellationToken.None);
+
+        Assert.Same(failed, result);
+        Assert.Equal(["fetch", "repair"], calls);
+        Assert.Equal("b", content.Repaired!.ServerId);
+        Assert.Equal(["core"], content.Repaired.Modules.Select(module => module.Id));
+    }
+
+    private static DistroModule RepairModule(string id, ModuleType type) => new()
+    {
+        Id = id,
+        Path = $"mods/{id}.jar",
+        Url = $"https://example.test/{id}.jar",
+        Hash = new string('a', 64),
+        Type = type,
+        IsServerManaged = true,
+    };
+
     private static ServerDistribution TwoServers() => new()
     {
         Servers =
@@ -195,6 +225,9 @@ public sealed class GameSessionPreparerTests
         }
         public Task<ModuleUpdateResult> UpdateAsync(ServerDistribution value, CancellationToken cancellationToken)
         { calls.Add("update"); return Task.FromResult(update); }
+        public ServerDistribution? Repaired { get; private set; }
+        public Task<ModuleUpdateResult> RepairAsync(ServerDistribution value, IProgress<LaunchProgress>? progress, CancellationToken cancellationToken)
+        { calls.Add("repair"); Repaired = value; return Task.FromResult(update); }
         public Task SaveCacheAsync(ServerDistribution value, CancellationToken cancellationToken)
         { calls.Add("cache"); return Task.CompletedTask; }
         public Task<ServerDistribution?> TryLoadCacheAsync(CancellationToken cancellationToken)

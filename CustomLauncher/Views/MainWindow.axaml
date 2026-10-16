@@ -26,6 +26,14 @@
     <!-- Body: one centred column. Everything that matters reads top to bottom. -->
     <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
                 Spacing="18" Margin="40,0" MaxWidth="520">
+      <!-- Only on screen once the startup check found a newer version. -->
+      <Border Classes="card" IsVisible="{Binding HasUpdate}">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Grid.Column="0" Text="{Binding UpdateBannerText}" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Classes="accent" Content="지금 업데이트" Command="{Binding UpdateCommand}" />
+        </Grid>
+      </Border>
+
       <Image Source="avares://CustomLauncher/Assets/Images/logo.png"
              Height="132" Stretch="Uniform" HorizontalAlignment="Center" />
 

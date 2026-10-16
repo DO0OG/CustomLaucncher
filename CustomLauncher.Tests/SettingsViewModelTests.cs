@@ -51,4 +51,29 @@ public sealed class SettingsViewModelTests
         Assert.Equal(0, saves);
         Assert.Equal(2048, settings.Java.MinRamMb);
     }
+
+    [Fact]
+    public void UpdateOptionsDefaultWhenMissingFromTheFile()
+    {
+        var settings = System.Text.Json.JsonSerializer.Deserialize<LauncherSettings>("{}")!;
+
+        Assert.True(settings.CheckForUpdates);
+        Assert.False(settings.IncludePrereleases);
+    }
+
+    [Fact]
+    public async Task UpdateOptionsAreCommittedOnSave()
+    {
+        var settings = new LauncherSettings { InstallPath = Path.GetTempPath() };
+        var viewModel = new SettingsViewModel(settings, _ => Task.CompletedTask)
+        {
+            CheckForUpdates = false,
+            IncludePrereleases = true,
+        };
+
+        Assert.True(settings.CheckForUpdates);
+        Assert.True(await viewModel.SaveAsync());
+        Assert.False(settings.CheckForUpdates);
+        Assert.True(settings.IncludePrereleases);
+    }
 }

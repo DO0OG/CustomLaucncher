@@ -38,6 +38,12 @@
               <TextBlock Text="연동" Classes="h2" />
               <CheckBox IsChecked="{Binding DiscordRpcEnabled}" Content="Discord에 플레이 상태 표시" />
             </StackPanel>
+
+            <StackPanel Spacing="8">
+              <TextBlock Text="업데이트" Classes="h2" />
+              <CheckBox IsChecked="{Binding CheckForUpdates}" Content="시작할 때 업데이트 확인" />
+              <CheckBox IsChecked="{Binding IncludePrereleases}" Content="프리릴리스 포함" />
+            </StackPanel>
           </StackPanel>
         </ScrollViewer>
       </TabItem>

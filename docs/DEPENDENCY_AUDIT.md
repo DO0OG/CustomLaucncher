@@ -13,7 +13,7 @@ Korean version: [DEPENDENCY_AUDIT.ko.md](DEPENDENCY_AUDIT.ko.md)
 | CmlLib.Core.Installer.NeoForge | 4.0.1 | NeoForge installation (MIT) |
 | XboxAuthNet.Game.Msal | 0.1.2 | MSAL browser + device-code providers and OS-protected token cache (MIT) |
 | SharpCompress | 0.50.5 | 7z extraction. Every entry is preflighted through `ModuleValidation` and streamed. |
-| Velopack | 1.2.0 | Startup hook only (`VelopackApp.Build().Run()`). No update check/apply UI or update feed yet (MIT) |
+| Velopack | 1.2.0 | Auto-update from GitHub Releases (MIT). Startup hook (`VelopackApp.Build().Run()`) and update check/apply, active for installed builds and Portable.zip. The release workflow packs and uploads with the `vpk` 1.2.0 CLI. Packages are not code-signed yet. |
 | DiscordRichPresence | 1.6.1.70 | Optional Discord IPC, behind a compile flag and a user opt-in (MIT) |
 
 ## Manifest tool

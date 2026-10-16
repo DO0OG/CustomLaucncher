@@ -17,6 +17,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     private readonly DebugLogger _logger;
     private readonly IAuthService _auth;
     private readonly ILauncherService _launcher;
+    private readonly IUpdateService _updates;
     private readonly CancellationTokenSource _lifetime = new();
     private readonly HttpClient _statusHttpClient;
     private readonly HttpClient _contentHttpClient;
@@ -48,6 +49,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     private bool _serverOnline;
     private string _serverStatus = "서버 확인 중...";
     private string _serverMotd = string.Empty;
+    private string? _availableUpdateVersion;
 
     public MainViewModel(AppPaths paths, AppSettingsManager settingsManager, DebugLogger logger)
         : this(paths, settingsManager, logger, new AuthService(paths), new LauncherService()) { }
@@ -59,7 +61,8 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         IAuthService auth,
         ILauncherService launcher,
         Func<string, IContentUpdateService>? contentFactory = null,
-        Func<ServerEntry?, CancellationToken, Task<ServerStatusInfo>>? checkStatus = null)
+        Func<ServerEntry?, CancellationToken, Task<ServerStatusInfo>>? checkStatus = null,
+        IUpdateService? updates = null)
     {
         _paths = paths;
         _settingsManager = settingsManager;
@@ -67,6 +70,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         _auth = auth;
         if (_auth is AuthService deviceAuth) deviceAuth.DeviceCodeReceived += OnDeviceCodeReceived;
         _launcher = launcher;
+        _updates = updates ?? new UpdateService(_logger);
         _statusHttpClient = new HttpClient();
         _contentHttpClient = new HttpClient();
         _contentHttpClient.DefaultRequestHeaders.UserAgent.ParseAdd(LauncherConfig.UserAgent);
@@ -86,6 +90,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         LaunchCommand = new AsyncCommand(LaunchAsync, () => !Busy && _session is not null);
         RepairCommand = new AsyncCommand(RepairFilesAsync, () => !Busy);
         CancelCommand = new RelayCommand(CancelCurrentOperation, () => Busy && _currentOperation is not null);
+        UpdateCommand = new AsyncCommand(UpdateAsync, () => !Busy && HasUpdate);
         OpenSettingsCommand = new RelayCommand(() => SettingsRequested?.Invoke(this, EventArgs.Empty));
         OpenLogFolderCommand = new RelayCommand(OpenLogFolder);
     }
@@ -100,6 +105,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     public ICommand LaunchCommand { get; }
     public ICommand RepairCommand { get; }
     public ICommand CancelCommand { get; }
+    public ICommand UpdateCommand { get; }
     public ICommand OpenLogFolderCommand { get; }
     public string GameLog { get => _gameLog; private set => SetProperty(ref _gameLog, value); }
     public ICommand OpenSettingsCommand { get; }
@@ -172,6 +178,21 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     public string Status { get => _status; private set => SetProperty(ref _status, value); }
     public string Account { get => _account; private set => SetProperty(ref _account, value); }
     public double Progress { get => _progress; private set => SetProperty(ref _progress, value); }
+    public string? AvailableUpdateVersion
+    {
+        get => _availableUpdateVersion;
+        private set
+        {
+            if (!SetProperty(ref _availableUpdateVersion, value)) return;
+            RaisePropertyChanged(nameof(HasUpdate));
+            RaisePropertyChanged(nameof(UpdateBannerText));
+            NotifyCommandStates();
+        }
+    }
+
+    public bool HasUpdate => _availableUpdateVersion is not null;
+    public string UpdateBannerText => $"새 버전 {_availableUpdateVersion}이 있습니다";
+
     public bool Busy
     {
         get => _busy;
@@ -209,6 +230,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
             Account = _session?.Username ?? "로그인하지 않음";
             Status = IdleStatus();
             _ = RefreshServersAsync(content);
+            if (_settings.CheckForUpdates) _ = CheckForUpdatesAsync();
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
         catch (Exception exception)
@@ -246,6 +268,54 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         catch (Exception exception)
         {
             await _logger.WriteAsync(LauncherLogLevel.Warn, "Server list refresh failed; keeping the cached list", exception);
+        }
+    }
+
+    /// <summary>One startup check. The banner never blocks anything; only the update button waits for idle.</summary>
+    private async Task CheckForUpdatesAsync()
+    {
+        try
+        {
+            AvailableUpdateVersion = await _updates.CheckAsync(_settings.IncludePrereleases, _lifetime.Token);
+        }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
+        catch (Exception exception)
+        {
+            await _logger.WriteAsync(LauncherLogLevel.Warn, "Update check failed", exception);
+        }
+    }
+
+    public async Task UpdateAsync()
+    {
+        if (_gameProcess is not null)
+        {
+            Status = "게임을 종료한 뒤 업데이트해 주세요.";
+            return;
+        }
+        if (Busy || !HasUpdate) return;
+        using var operation = BeginOperation();
+        Busy = true;
+        Progress = 0;
+        Status = "업데이트를 내려받는 중...";
+        try
+        {
+            await _updates.DownloadAndApplyAsync(percent => Dispatcher.UIThread.Post(() =>
+            {
+                if (ReferenceEquals(_currentOperation, operation)) Progress = percent;
+            }), operation.Token);
+        }
+        catch (OperationCanceledException) when (operation.IsCancellationRequested)
+        {
+            Status = "업데이트가 취소되었습니다.";
+        }
+        catch (InvalidOperationException exception)
+        {
+            Status = exception.Message;
+        }
+        finally
+        {
+            Busy = false;
+            EndOperation(operation);
         }
     }
 
@@ -744,6 +814,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         ((AsyncCommand)LogoutCommand).NotifyCanExecuteChanged();
         ((AsyncCommand)LaunchCommand).NotifyCanExecuteChanged();
         ((AsyncCommand)RepairCommand).NotifyCanExecuteChanged();
+        ((AsyncCommand)UpdateCommand).NotifyCanExecuteChanged();
         ((RelayCommand)CancelCommand).NotifyCanExecuteChanged();
     }
 

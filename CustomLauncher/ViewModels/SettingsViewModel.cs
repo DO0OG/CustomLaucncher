@@ -16,6 +16,8 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
     private bool _discordRpcEnabled;
     private bool _fullScreen;
     private bool _closeLauncherOnGameStart;
+    private bool _checkForUpdates;
+    private bool _includePrereleases;
     private string _validationMessage = string.Empty;
 
     public SettingsViewModel(LauncherSettings target, Func<CancellationToken, Task> save, AppPaths? paths = null,
@@ -29,6 +31,8 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
         _discordRpcEnabled = target.DiscordRpcEnabled;
         _fullScreen = target.FullScreen;
         _closeLauncherOnGameStart = target.CloseLauncherOnGameStart;
+        _checkForUpdates = target.CheckForUpdates;
+        _includePrereleases = target.IncludePrereleases;
         if (paths is null)
         {
             Java = new JavaSettingsViewModel(target.Java);
@@ -80,6 +84,8 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
     public bool DiscordRpcEnabled { get => _discordRpcEnabled; set => SetProperty(ref _discordRpcEnabled, value); }
     public bool FullScreen { get => _fullScreen; set => SetProperty(ref _fullScreen, value); }
     public bool CloseLauncherOnGameStart { get => _closeLauncherOnGameStart; set => SetProperty(ref _closeLauncherOnGameStart, value); }
+    public bool CheckForUpdates { get => _checkForUpdates; set => SetProperty(ref _checkForUpdates, value); }
+    public bool IncludePrereleases { get => _includePrereleases; set => SetProperty(ref _includePrereleases, value); }
     public JavaSettingsViewModel Java { get; }
     public ModuleManagementViewModel? Modules { get; }
     public ShaderPackViewModel? Shaders { get; }
@@ -96,6 +102,8 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
         _target.DiscordRpcEnabled = DiscordRpcEnabled;
         _target.FullScreen = FullScreen;
         _target.CloseLauncherOnGameStart = CloseLauncherOnGameStart;
+        _target.CheckForUpdates = CheckForUpdates;
+        _target.IncludePrereleases = IncludePrereleases;
         Java.ApplyTo(_target.Java);
         await _save(cancellationToken);
         return true;

@@ -23,6 +23,22 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
+    public async Task LaunchOptionsAreCommittedOnSave()
+    {
+        var settings = new LauncherSettings { InstallPath = Path.GetTempPath() };
+        var viewModel = new SettingsViewModel(settings, _ => Task.CompletedTask)
+        {
+            FullScreen = true,
+            CloseLauncherOnGameStart = true,
+        };
+
+        Assert.False(settings.FullScreen);
+        Assert.True(await viewModel.SaveAsync());
+        Assert.True(settings.FullScreen);
+        Assert.True(settings.CloseLauncherOnGameStart);
+    }
+
+    [Fact]
     public async Task InvalidMemoryRangeDoesNotMutateOrSave()
     {
         var settings = new LauncherSettings { InstallPath = Path.GetTempPath() };

@@ -5,7 +5,7 @@ Korean version: [QA_MATRIX.ko.md](QA_MATRIX.ko.md)
 ## Automated evidence
 
 CI runs restore, build, unit tests, and `dotnet format --verify-no-changes` on Windows, macOS, and
-Linux for every pull request. The suite is 140 tests covering:
+Linux for every pull request. The suite is 151 tests covering:
 
 - Path mapping/migration and per-launcher directory scoping.
 - Settings transactions (validate-before-mutate, atomic write, schema version).
@@ -24,6 +24,12 @@ Linux for every pull request. The suite is 140 tests covering:
   still dropped when clearing the cached credentials throws.
 - Sign-out: the session is cleared and the primary action swaps back to sign-in, and the session is
   still dropped when clearing the cached credentials throws.
+- Progress status text (`게임 파일 설치 3/10 파일, 5.0/20.0 MB` form and the file-only variant).
+- Non-zero exit message with the newest crash-report and log paths.
+- Close-launcher-after-start request, and persistence of the `FullScreen` and `CloseLauncherOnGameStart` settings.
+- Drop-in mod enable/disable (rename to `.disabled`), and refusal to toggle server-managed mods.
+- Java candidate sequential check, mismatch notice for a configured Java, and install version selection in the settings window.
+- Discord Details includes the server name.
 - Manifest tool: hashing, merge preservation, semantic diff, URL templating, and the tool window's
   validation/defaults/change-report.
 
@@ -50,6 +56,12 @@ the ordering rules are covered even though the gesture is not.
 | Java discovery/install and modded game launch | Required | Required (x64 + arm64) | Required |
 | Discord IPC discovery | Required | Required | Required (native, Flatpak, Snap) |
 | Distribution update / cancel / offline fallback | Required | Required | Required |
+| Fullscreen launch | Required | Required | Required |
+| Close launcher after game start (game keeps running) | Required | Required | Required |
+| Disabled drop-in mod not loaded in game | Required | Required | Required |
+| Crash message with crash-report and log paths | Required | Required | Required |
+| Progress numbers in the status line | Required | Required | Required |
+| Discord status shows server name | Required | Required | Required |
 | Signed package update | Required | Required + notarization | Required |
 
 Public release still needs the real distribution endpoint filled in, target-OS machines, and

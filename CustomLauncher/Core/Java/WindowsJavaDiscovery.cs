@@ -74,12 +74,14 @@ public sealed class WindowsJavaDiscovery : IJavaDiscovery
 
     public string ExecutableFileName => "javaw.exe";
 
-    public string? ScanSystemForValidJava() => JavaDiscoveryUtilities.FirstExistingExecutable(
+    public string? ScanSystemForValidJava() => EnumerateCandidates().FirstOrDefault();
+
+    public IEnumerable<string> EnumerateCandidates() => JavaDiscoveryUtilities.ExistingExecutables(
         fileSystem,
-        EnumerateCandidates(),
+        EnumerateRawCandidates(),
         ExecutableFileName);
 
-    private IEnumerable<string?> EnumerateCandidates()
+    private IEnumerable<string?> EnumerateRawCandidates()
     {
         yield return fileSystem.GetEnvironmentVariable("JAVA_HOME");
         foreach (var home in registry.FindJavaHomes())

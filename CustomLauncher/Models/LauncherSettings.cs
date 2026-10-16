@@ -9,6 +9,8 @@ public sealed class LauncherSettings
     public string InstallPath { get; set; } = string.Empty;
     public JavaConfig Java { get; set; } = JavaConfig.CreateDefault();
     public bool DiscordRpcEnabled { get; set; }
+    public bool FullScreen { get; set; }
+    public bool CloseLauncherOnGameStart { get; set; }
     public string? SelectedShaderPackId { get; set; }
     public List<string> EnabledResourcePacks { get; set; } = [];
 

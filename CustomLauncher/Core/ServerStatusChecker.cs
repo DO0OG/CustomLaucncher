@@ -40,7 +40,7 @@ public sealed class ServerStatusChecker
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeout.CancelAfter(requestTimeout);
             using var request = new HttpRequestMessage(HttpMethod.Get, statusApiUrl);
-            request.Headers.UserAgent.ParseAdd("CustomLauncher/2.0");
+            request.Headers.UserAgent.ParseAdd(LauncherConfig.UserAgent);
             using var response = await httpClient.SendAsync(
                 request,
                 HttpCompletionOption.ResponseHeadersRead,

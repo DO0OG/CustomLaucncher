@@ -123,8 +123,11 @@ public sealed class ModuleListItem(DistroModule module, int depth, bool isEnable
     public event EventHandler? EnabledChanged;
 }
 
-/// <summary>A user-supplied jar in the mods folder.</summary>
-public sealed record DropInModItem(string FileName, bool IsServerManaged);
+/// <summary>A user-supplied jar in the mods folder. A disabled jar keeps the '.disabled' suffix on disk.</summary>
+public sealed record DropInModItem(string FileName, bool IsServerManaged, bool IsEnabled = true)
+{
+    public string StateLabel => IsEnabled ? string.Empty : "꺼짐";
+}
 
 public sealed class ModuleManagementViewModel : ContentTabViewModel
 {
@@ -151,6 +154,8 @@ public sealed class ModuleManagementViewModel : ContentTabViewModel
         AddDropInCommand = new AsyncCommand(AddDropInAsync, () => !Busy && FilePicker is not null, ReportError);
         DeleteDropInCommand = new AsyncCommand(DeleteDropInAsync,
             () => !Busy && _selectedDropIn is { IsServerManaged: false }, ReportError);
+        ToggleDropInCommand = new AsyncCommand(ToggleDropInAsync,
+            () => !Busy && _selectedDropIn is { IsServerManaged: false }, ReportError);
     }
 
     public ObservableCollection<ModuleListItem> Modules { get; } = [];
@@ -163,6 +168,7 @@ public sealed class ModuleManagementViewModel : ContentTabViewModel
     public AsyncCommand UpdateCommand { get; }
     public AsyncCommand AddDropInCommand { get; }
     public AsyncCommand DeleteDropInCommand { get; }
+    public AsyncCommand ToggleDropInCommand { get; }
 
     /// <summary>Supplied by the view; returns the chosen jar path or null when cancelled.</summary>
     public Func<Task<string?>>? FilePicker { get; set; }
@@ -170,7 +176,12 @@ public sealed class ModuleManagementViewModel : ContentTabViewModel
     public DropInModItem? SelectedDropIn
     {
         get => _selectedDropIn;
-        set { if (SetProperty(ref _selectedDropIn, value)) DeleteDropInCommand.NotifyCanExecuteChanged(); }
+        set
+        {
+            if (!SetProperty(ref _selectedDropIn, value)) return;
+            DeleteDropInCommand.NotifyCanExecuteChanged();
+            ToggleDropInCommand.NotifyCanExecuteChanged();
+        }
     }
 
     public async Task RefreshAsync() => await RunAsync(async token =>
@@ -225,6 +236,18 @@ public sealed class ModuleManagementViewModel : ContentTabViewModel
         await RefreshDropInsAsync(token);
     });
 
+    private async Task ToggleDropInAsync() => await RunAsync(async token =>
+    {
+        if (SelectedDropIn is null) return;
+        var enable = !SelectedDropIn.IsEnabled;
+        var updated = await _dropIns.SetEnabledAsync(SelectedDropIn.FileName, enable, token);
+        var name = PackFile.EnabledNameOf(updated.FileName);
+        Message = enable ? $"모드를 켰습니다: {name}" : $"모드를 껐습니다: {name}";
+        await RefreshDropInsAsync(token);
+        // The file name changed, so re-select the same jar by its new name.
+        SelectedDropIn = DropIns.FirstOrDefault(item => item.FileName == updated.FileName);
+    });
+
     private async Task RefreshDropInsAsync(CancellationToken token)
     {
         var selectedName = SelectedDropIn?.FileName;
@@ -234,7 +257,9 @@ public sealed class ModuleManagementViewModel : ContentTabViewModel
         var serverOwned = ServerOwnedModFileNames();
         DropIns.Clear();
         foreach (var file in scanned)
-            DropIns.Add(new DropInModItem(file.FileName, file.IsServerManaged || serverOwned.Contains(file.FileName)));
+            DropIns.Add(new DropInModItem(file.FileName,
+                file.IsServerManaged || serverOwned.Contains(PackFile.EnabledNameOf(file.FileName)),
+                file.IsEnabled));
         SelectedDropIn = DropIns.FirstOrDefault(item => item.FileName == selectedName);
         RaisePropertyChanged(nameof(DropInsEmpty));
     }
@@ -324,6 +349,7 @@ public sealed class ModuleManagementViewModel : ContentTabViewModel
         UpdateCommand.NotifyCanExecuteChanged();
         AddDropInCommand.NotifyCanExecuteChanged();
         DeleteDropInCommand.NotifyCanExecuteChanged();
+        ToggleDropInCommand.NotifyCanExecuteChanged();
     }
 
     public override void Dispose()

@@ -13,12 +13,14 @@ public sealed class MacJavaDiscovery : IJavaDiscovery
 
     public string ExecutableFileName => "java";
 
-    public string? ScanSystemForValidJava() => JavaDiscoveryUtilities.FirstExistingExecutable(
+    public string? ScanSystemForValidJava() => EnumerateCandidates().FirstOrDefault();
+
+    public IEnumerable<string> EnumerateCandidates() => JavaDiscoveryUtilities.ExistingExecutables(
         fileSystem,
-        EnumerateCandidates(),
+        EnumerateRawCandidates(),
         ExecutableFileName);
 
-    private IEnumerable<string?> EnumerateCandidates()
+    private IEnumerable<string?> EnumerateRawCandidates()
     {
         yield return ToExecutable(fileSystem.GetEnvironmentVariable("JAVA_HOME"));
 

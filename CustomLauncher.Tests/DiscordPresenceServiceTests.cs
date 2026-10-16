@@ -33,7 +33,7 @@ public sealed class DiscordPresenceServiceTests
 
         Assert.All(client.Presences, presence =>
         {
-            Assert.Equal("CustomLauncher", presence.Details);
+            Assert.Equal(LauncherConfig.ServerName, presence.Details);
             Assert.DoesNotContain("uuid", presence.State, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("user", presence.State, StringComparison.OrdinalIgnoreCase);
         });

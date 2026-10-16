@@ -173,10 +173,10 @@ public sealed class DiscordPresenceService : IDiscordPresenceService
 
     private static DiscordPresence Map(DiscordPresenceState state) => state switch
     {
-        DiscordPresenceState.LauncherOpen => new("CustomLauncher", "Launcher open"),
-        DiscordPresenceState.Ready => new("CustomLauncher", "Ready to play"),
-        DiscordPresenceState.LaunchingGame => new("CustomLauncher", "Launching game"),
-        DiscordPresenceState.Playing => new("CustomLauncher", "Playing"),
+        DiscordPresenceState.LauncherOpen => new(LauncherConfig.ServerName, "Launcher open"),
+        DiscordPresenceState.Ready => new(LauncherConfig.ServerName, "Ready to play"),
+        DiscordPresenceState.LaunchingGame => new(LauncherConfig.ServerName, "Launching game"),
+        DiscordPresenceState.Playing => new(LauncherConfig.ServerName, "Playing"),
         _ => throw new ArgumentOutOfRangeException(nameof(state), state, null),
     };
 }

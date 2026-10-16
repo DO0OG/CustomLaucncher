@@ -13,7 +13,9 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContextChanged += (_, _) =>
         {
-            if (DataContext is MainViewModel vm) vm.SettingsRequested += ShowSettings;
+            if (DataContext is not MainViewModel vm) return;
+            vm.SettingsRequested += ShowSettings;
+            vm.CloseRequested += (_, _) => Close();
         };
         Activated += (_, _) => { if (DataContext is MainViewModel vm) vm.WindowActive = true; };
         Deactivated += (_, _) => { if (DataContext is MainViewModel vm) vm.WindowActive = false; };

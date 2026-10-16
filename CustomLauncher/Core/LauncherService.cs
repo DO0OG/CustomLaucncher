@@ -69,6 +69,7 @@ public sealed class LauncherService : ILauncherService
             ServerPort = LauncherConfig.ServerPort,
             ScreenWidth = settings.Resolution.Width,
             ScreenHeight = settings.Resolution.Height,
+            FullScreen = settings.FullScreen,
             GameLauncherName = LauncherConfig.GameLauncherName,
             MinimumRamMb = settings.Java.MinRamMb,
             MaximumRamMb = settings.Java.MaxRamMb,
@@ -123,13 +124,36 @@ public sealed class LauncherService : ILauncherService
             IProgress<LaunchProgress>? progress,
             CancellationToken cancellationToken)
         {
+            // File and byte progress arrive separately; each report carries the other's last value.
+            int? filesDone = null, filesTotal = null;
+            long? bytesDone = null, bytesTotal = null;
             var fileProgress = new Progress<CmlLib.Core.Installers.InstallerProgressChangedEventArgs>(value =>
+            {
+                filesDone = value.ProgressedTasks;
+                filesTotal = value.TotalTasks;
                 progress?.Report(new LaunchProgress(
                     "게임 파일 설치",
                     value.ProgressedTasks / (double)Math.Max(1, value.TotalTasks),
-                    value.Name)));
+                    value.Name)
+                {
+                    FilesDone = filesDone,
+                    FilesTotal = filesTotal,
+                    BytesDone = bytesDone,
+                    BytesTotal = bytesTotal,
+                });
+            });
             var byteProgress = new Progress<ByteProgress>(value =>
-                progress?.Report(new LaunchProgress("게임 파일 다운로드", value.ToRatio())));
+            {
+                bytesDone = value.ProgressedBytes;
+                bytesTotal = value.TotalBytes;
+                progress?.Report(new LaunchProgress("게임 파일 다운로드", value.ToRatio())
+                {
+                    FilesDone = filesDone,
+                    FilesTotal = filesTotal,
+                    BytesDone = bytesDone,
+                    BytesTotal = bytesTotal,
+                });
+            });
             await launcher.InstallAsync(versionName, fileProgress, byteProgress, cancellationToken);
         }
 

@@ -34,26 +34,28 @@ public sealed class JavaProvisioningService : IJavaProvisioner, IDisposable
     {
         var required = ParseFeatureVersion(requirement.RecommendedVersion, requirement.MinVersion);
         var candidate = launchOption.JavaPath;
+        string? configuredMismatch = null;
         if (!string.IsNullOrWhiteSpace(candidate))
         {
             var configured = await _validator.ValidateAsync(candidate, required, cancellationToken);
             if (configured.IsValid) return candidate;
+            configuredMismatch = $"지정한 Java가 Java {required} 요구 조건과 맞지 않습니다: {configured.ErrorMessage}";
         }
 
-        progress?.Report(new LaunchProgress("Java 검색", 0.1));
-        candidate = _discovery.ScanSystemForValidJava();
-        if (!string.IsNullOrWhiteSpace(candidate))
+        progress?.Report(new LaunchProgress("Java 검색", 0.1,
+            configuredMismatch is null ? null : configuredMismatch + " 다른 Java를 찾습니다."));
+        foreach (var discovered in _discovery.EnumerateCandidates())
         {
-            var discovered = await _validator.ValidateAsync(candidate, required, cancellationToken);
-            if (discovered.IsValid)
-            {
-                launchOption.JavaPath = candidate;
-                return candidate;
-            }
+            var result = await _validator.ValidateAsync(discovered, required, cancellationToken);
+            if (!result.IsValid) continue;
+            launchOption.JavaPath = discovered;
+            return discovered;
         }
 
         if (!allowInstall)
-            throw new InvalidOperationException($"Java {required}이 필요합니다. 설정에서 자동 설치에 동의하거나 Java 경로를 지정해 주세요.");
+            throw new InvalidOperationException(
+                (configuredMismatch is null ? string.Empty : configuredMismatch + " ")
+                + $"Java {required}이 필요합니다. 설정에서 자동 설치에 동의하거나 Java 경로를 지정해 주세요.");
 
         progress?.Report(new LaunchProgress("Java 설치", 0.2));
         var installProgress = new Progress<JavaInstallProgress>(value =>

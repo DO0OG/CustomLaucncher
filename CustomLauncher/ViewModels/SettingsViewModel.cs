@@ -1,4 +1,5 @@
 using CustomLauncher.Core;
+using CustomLauncher.Core.Java;
 using CustomLauncher.Models;
 
 namespace CustomLauncher.ViewModels;
@@ -12,6 +13,8 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
     private int _resolutionWidth;
     private int _resolutionHeight;
     private bool _discordRpcEnabled;
+    private bool _fullScreen;
+    private bool _closeLauncherOnGameStart;
     private string _validationMessage = string.Empty;
 
     public SettingsViewModel(LauncherSettings target, Func<CancellationToken, Task> save, AppPaths? paths = null)
@@ -22,9 +25,13 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
         _resolutionWidth = target.Resolution.Width;
         _resolutionHeight = target.Resolution.Height;
         _discordRpcEnabled = target.DiscordRpcEnabled;
-        Java = new JavaSettingsViewModel(target.Java);
-
-        if (paths is null) return;
+        _fullScreen = target.FullScreen;
+        _closeLauncherOnGameStart = target.CloseLauncherOnGameStart;
+        if (paths is null)
+        {
+            Java = new JavaSettingsViewModel(target.Java);
+            return;
+        }
 
         // Content tabs need a live game directory; they are only built for the real app.
         var installPath = string.IsNullOrWhiteSpace(target.InstallPath) ? paths.DefaultGameDir : target.InstallPath;
@@ -32,8 +39,15 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
         _ownedHttpClient = new HttpClient();
         _ownedHttpClient.DefaultRequestHeaders.UserAgent.ParseAdd(LauncherConfig.UserAgent);
 
+        var content = new ContentUpdateService(_ownedHttpClient, installPath);
+        var installer = new JavaInstaller(_ownedHttpClient, paths.RuntimeDir, new JavaValidator());
+        Java = new JavaSettingsViewModel(
+            target.Java,
+            install: installer.InstallAsync,
+            requirementSource: async token => (await content.TryLoadCacheAsync(token))?.Java);
+
         Modules = new ModuleManagementViewModel(
-            new ContentUpdateService(_ownedHttpClient, installPath),
+            content,
             new DropInModManager(Path.Combine(installPath, LauncherConfig.ModsFolderName)),
             new ModuleManagementViewModel.ModuleSelectionStore(
                 () => _target.DisabledOptionalModuleIds,
@@ -55,6 +69,8 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
     public int ResolutionWidth { get => _resolutionWidth; set => SetProperty(ref _resolutionWidth, value); }
     public int ResolutionHeight { get => _resolutionHeight; set => SetProperty(ref _resolutionHeight, value); }
     public bool DiscordRpcEnabled { get => _discordRpcEnabled; set => SetProperty(ref _discordRpcEnabled, value); }
+    public bool FullScreen { get => _fullScreen; set => SetProperty(ref _fullScreen, value); }
+    public bool CloseLauncherOnGameStart { get => _closeLauncherOnGameStart; set => SetProperty(ref _closeLauncherOnGameStart, value); }
     public JavaSettingsViewModel Java { get; }
     public ModuleManagementViewModel? Modules { get; }
     public ShaderPackViewModel? Shaders { get; }
@@ -69,6 +85,8 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
         _target.InstallPath = Path.GetFullPath(InstallPath);
         _target.Resolution = new Resolution(ResolutionWidth, ResolutionHeight);
         _target.DiscordRpcEnabled = DiscordRpcEnabled;
+        _target.FullScreen = FullScreen;
+        _target.CloseLauncherOnGameStart = CloseLauncherOnGameStart;
         Java.ApplyTo(_target.Java);
         await _save(cancellationToken);
         return true;

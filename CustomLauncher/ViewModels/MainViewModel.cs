@@ -62,6 +62,9 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     }
 
     public event EventHandler? SettingsRequested;
+
+    /// <summary>Raised once the game process has started and the user asked to close the launcher then.</summary>
+    public event EventHandler? CloseRequested;
     public ICommand LoginCommand { get; }
     public ICommand LogoutCommand { get; }
     public ICommand LaunchCommand { get; }
@@ -252,13 +255,14 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
             var progress = new Progress<LaunchProgress>(value => Dispatcher.UIThread.Post(() =>
             {
                 Progress = value.Ratio * 100;
-                Status = string.IsNullOrWhiteSpace(value.Detail) ? value.Stage : $"{value.Stage}: {value.Detail}";
+                Status = value.ToStatusText();
             }));
             var prepared = await _launcher.PrepareGameSessionAsync(_settings, _session, progress, operation.Token);
             AttachGameProcess(prepared.Process);
             _gameProcessWrapper!.StartWithEvents();
             _discord?.SetState(DiscordPresenceState.Playing);
             Status = prepared.Warning ?? "게임 실행 중";
+            if (_settings.CloseLauncherOnGameStart) CloseRequested?.Invoke(this, EventArgs.Empty);
         }
         catch (OperationCanceledException) when (operation.IsCancellationRequested)
         {
@@ -319,11 +323,47 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     private void OnGameOutputReceived(object? sender, string line) =>
         _ = _logger.WriteAsync(LauncherLogLevel.Debug, $"[GAME] {line}");
 
+    /// <summary>Message for a non-zero exit, pointing at the newest crash report and the game log when they exist.</summary>
+    public static string DescribeAbnormalExit(int exitCode, string gameDirectory)
+    {
+        var message = $"게임이 비정상 종료되었습니다(코드 {exitCode}).";
+        var crashDirectory = Path.Combine(gameDirectory, "crash-reports");
+        var newestCrash = Directory.Exists(crashDirectory)
+            ? new DirectoryInfo(crashDirectory).EnumerateFiles().OrderByDescending(file => file.LastWriteTimeUtc).FirstOrDefault()
+            : null;
+        if (newestCrash is not null) message += $" 충돌 보고서: {newestCrash.FullName}.";
+        var log = Path.Combine(gameDirectory, "logs", "latest.log");
+        if (File.Exists(log)) message += $" 로그: {log}.";
+        return message;
+    }
+
+    private int? ReadExitCode()
+    {
+        try { return _gameProcess?.ExitCode; }
+        catch (Exception exception) when (exception is InvalidOperationException or NotSupportedException)
+        {
+            return null;
+        }
+    }
+
+    private string DescribeGameExit()
+    {
+        if (ReadExitCode() is not { } code || code == 0) return "게임이 종료되었습니다.";
+        var gameDirectory = Path.GetFullPath(string.IsNullOrWhiteSpace(_settings.InstallPath)
+            ? _paths.DefaultGameDir : _settings.InstallPath);
+        try { return DescribeAbnormalExit(code, gameDirectory); }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return $"게임이 비정상 종료되었습니다(코드 {code}).";
+        }
+    }
+
     private void OnGameExited(object? sender, EventArgs eventArgs) => Dispatcher.UIThread.Post(() =>
     {
+        var exitStatus = DescribeGameExit();
         DetachGameProcess();
         Busy = false;
-        Status = "게임이 종료되었습니다.";
+        Status = exitStatus;
         _discord?.SetState(DiscordPresenceState.Ready);
     });
 

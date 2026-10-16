@@ -10,6 +10,7 @@
 | CmlLib.Core | 4.0.6 | 마인크래프트 설치·실행 오케스트레이션 (MIT) |
 | CmlLib.Core.Auth.Microsoft | 3.3.1 | 마인크래프트/Xbox 인증 파이프라인 (MIT) |
 | CmlLib.Core.Installer.Forge | 1.1.1 | Forge 설치 (MIT) |
+| CmlLib.Core.Installer.NeoForge | 4.0.1 | NeoForge 설치 (MIT) |
 | XboxAuthNet.Game.Msal | 0.1.2 | MSAL 브라우저·디바이스 코드 provider 및 OS 보호 토큰 캐시 (MIT) |
 | SharpCompress | 0.50.5 | 7z 압축 해제. 모든 항목은 `ModuleValidation`으로 사전 검증 후 스트리밍됩니다. |
 | Velopack | 1.2.0 | 시작 훅만 사용(`VelopackApp.Build().Run()`). 업데이트 확인·적용 UI와 업데이트 피드는 아직 없음 (MIT) |
@@ -34,5 +35,7 @@
   아니라 Avalonia 스택의 일부이므로 앱 내 라이선스 목록(`Views/AboutWindow.axaml`)에는 따로 올리지
   않습니다. Avalonia를 Tmds.DBus.Protocol 0.21.3 이상을 끌어오는 버전으로 올리면 이 고정을 지울 수
   있습니다.
+- HtmlAgilityPack은 CmlLib.Core.Installer.NeoForge의 전이 의존성(MIT)입니다. 설치기가 쓰는 파싱
+  라이브러리이므로 앱 내 라이선스 목록에는 따로 올리지 않습니다.
 
 런타임 의존성이 바뀌면 이 파일과 `Views/AboutWindow.axaml`을 함께 갱신하세요.

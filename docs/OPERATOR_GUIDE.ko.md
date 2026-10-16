@@ -339,3 +339,29 @@ dotnet publish CustomLauncher.ManifestTool -c Release -r win-x64 ^
 
 1. **새 버전 런처를 먼저 배포**합니다. 플레이어가 새 런처를 쓰게 된 뒤에
 2. 매니페스트를 새 형식으로 바꿔 올립니다.
+
+### 9-4. NeoForge·Quilt 버전 적는 법
+
+NeoForge와 Quilt는 매니페스트 `servers` 항목의 `modLoader`로 지정합니다. 설치는 forge·fabric·neoforge·quilt를 지원합니다.
+
+```json
+"modLoader": { "type": "neoforge", "version": "21.1.100" }
+"modLoader": { "type": "quilt", "version": "0.29.1" }
+```
+
+- `neoforge`의 `version`은 NeoForge 버전입니다. Minecraft 버전(예: `1.21.1`)은 서버의 `minecraftVersion`에 적습니다.
+- `quilt`의 `version`은 Quilt 로더 버전입니다.
+- 옛 단일 서버 설정의 `ModLoaderType`(`LauncherConfig.cs`)은 `"forge"`·`"fabric"`·`"none"`만 지원하므로, NeoForge와 Quilt는 여기에 적을 수 없습니다.
+
+### 9-5. 서버 상태 확인(SLP)
+
+런처는 서버 상태를 다음 순서로 확인합니다.
+
+1. 서버에 `statusUrl`이 있으면 그 HTTPS 상태 API를 먼저 조회하고, 성공하면 그 결과를 씁니다. 이 경우 응답 시간은 표시하지 않습니다.
+2. `statusUrl`이 없거나 조회에 실패하면 런처가 서버 `address:port`로 Minecraft Server List Ping(SLP)을 직접 보내 접속자 수, MOTD, 버전 이름, 응답 시간(ms)을 읽습니다. SLP 타임아웃은 3초입니다. 실패하면 "상태 확인 불가"로 표시하고 로그에 경고를 남깁니다.
+
+메인 창에는 `온라인 · 3/20명 · 45ms` 형식으로 표시됩니다. 폴링 간격은 기존과 같이 최소 1분이며, 실패가 이어지면 최대 5분까지 늘어납니다.
+
+`servers` 배열의 서버는 `statusUrl`을 적지 않으면 런처에 빌드된 기본 상태 API를 쓰지 않고 SLP로 확인합니다. 레거시 단일 서버(`servers` 배열이 없는 옛 매니페스트)는 기존처럼 기본 상태 API를 먼저 씁니다.
+
+방화벽이 서버 포트로의 직접 연결을 막는 환경이면 해당 서버에 `statusUrl`을 지정하세요.

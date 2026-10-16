@@ -9,7 +9,8 @@
 - 시스템 브라우저 기반 Microsoft/Xbox 로그인(브라우저 불가 환경은 디바이스 코드로 폴백),
   세션 복원, 계정 전환을 위한 로그아웃
 - OS 관례에 맞춘 설정·로그·게임 데이터 경로, 런처별 폴더 분리, 기존 설정 마이그레이션
-- 서버 상태·MOTD·접속자 수 표시와 장애 시 백오프
+- 서버 상태·MOTD·접속자 수·응답 시간 표시(서버 직접 핑(SLP) 기반 포함)와 장애 시 백오프
+- Forge·Fabric·NeoForge·Quilt 모드 로더 자동 설치(이미 설치된 버전은 재설치하지 않음)
 - Java 탐색·검증·Adoptium 자동 설치, 시스템 메모리 기반 RAM 권장값, JVM 인자 관리
 - SHA-256·HTTPS·경로 탈출·압축 폭탄·취소·롤백을 처리하는 모듈 업데이트
 - 필수/선택/드롭인 모드, 셰이더팩, 리소스팩 관리(드래그앤드롭 순서)
@@ -72,7 +73,7 @@ dotnet publish CustomLauncher.ManifestTool -c Release -r win-x64 \
 ## 주요 라이선스
 
 - Avalonia UI — MIT
-- CmlLib.Core / CmlLib.Core.Auth.Microsoft / CmlLib.Core.Installer.Forge — MIT
+- CmlLib.Core / CmlLib.Core.Auth.Microsoft / CmlLib.Core.Installer.Forge / CmlLib.Core.Installer.NeoForge — MIT
 - XboxAuthNet.Game.Msal — MIT
 - SharpCompress — MIT
 - DiscordRichPresence — MIT

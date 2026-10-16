@@ -28,11 +28,11 @@
 | `address` | 예 | 서버 주소입니다. |
 | `port` | 아니요 | 1~65535이며, 생략하면 25565입니다. |
 | `minecraftVersion` | 예 | 마인크래프트 버전입니다(예: `1.20.1`). |
-| `modLoader` | 예 | `type`과 `version`을 담은 객체입니다. `type`은 `forge`·`fabric`·`neoforge`·`quilt`·`vanilla`(소문자)입니다. `vanilla` 외에는 `version`이 필수입니다. `neoforge`와 `quilt`는 스키마 검증은 통과하지만, 실행하면 "지원하지 않는 모드 로더" 오류가 표시됩니다. 설치 지원은 아직 없습니다. |
+| `modLoader` | 예 | `type`과 `version`을 담은 객체입니다. `type`은 `forge`·`fabric`·`neoforge`·`quilt`·`vanilla`(소문자)입니다. `vanilla` 외에는 `version`이 필수입니다. 런처는 `forge`·`fabric`·`neoforge`·`quilt`를 아직 설치되어 있지 않을 때 설치합니다. `neoforge`의 `version`은 NeoForge 버전(예: Minecraft `1.21.1`과 함께 쓰는 `21.1.100`)이고, `quilt`의 `version`은 Quilt 로더 버전(예: `0.29.1`)입니다. |
 | `java` | 예 | `minVersion`, `recommendedVersion`, 선택 항목 `minRamMb`입니다. 단일 서버 형식의 최상위 `java`와 같은 구조입니다. |
 | `modules` | 예 | 위 모듈 규칙을 따르는 모듈 목록입니다. |
 | `discord` | 아니요 | 선택 항목 `details`·`state`·`largeImageKey`입니다. `details`를 지정하면 Discord 상태에서 서버 이름 대신 이 값이 표시됩니다. `state`는 예약된 필드로, 현재 런처는 사용하지 않습니다. |
-| `statusUrl` | 아니요 | 서버 상태 확인에 쓰는 절대 `https` URL입니다. 생략하면 런처에 빌드된 기본 상태 API를 씁니다. |
+| `statusUrl` | 아니요 | 서버 상태 확인에 쓰는 절대 `https` URL입니다. 지정하면 런처가 이 상태 API를 먼저 조회하고, 성공하면 그 결과를 씁니다(응답 시간은 표시하지 않습니다). 생략하거나 조회에 실패하면 런처가 서버 `address:port`로 Minecraft Server List Ping(SLP)을 직접 보내 접속자 수, MOTD, 버전 이름, 응답 시간(ms)을 읽습니다. 방화벽이 서버 포트로의 직접 연결을 막는 환경이면 `statusUrl`을 지정하세요. |
 
 서버마다 게임 폴더가 따로 있습니다. 서버 `id`가 `default`인 서버(옛 단일 서버 형식 포함)는 설정의 게임 폴더를 그대로 쓰고, 그 밖의 서버는 `{게임 폴더}/instances/{서버 id}`를 게임 폴더로 씁니다. 그래서 mods·셰이더팩·리소스팩·options·servers.dat·logs·crash-reports·saves가 서버마다 따로 저장됩니다. Minecraft 공유 파일(libraries·versions·assets), 매니페스트 캐시, Java 런타임은 공유합니다. 오프라인 실행 가능 여부는 서버 폴더마다 따로 판정합니다. 플레이어가 다른 서버로 바꿔 실행하면 서버 관리 모듈이 새로 선택한 서버 기준으로 다시 동기화됩니다. 서버 선택 목록은 서버가 둘 이상일 때만 보입니다.
 

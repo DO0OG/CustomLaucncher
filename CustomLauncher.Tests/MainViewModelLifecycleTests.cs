@@ -245,9 +245,9 @@ public sealed class MainViewModelLifecycleTests
         AppPaths paths, FakeContentService content, List<string?>? statusUrls = null) =>
         new(paths, new AppSettingsManager(paths), new DebugLogger(paths), new SignedInAuthService(),
             new StubLauncherService(), _ => content,
-            (url, _) =>
+            (server, _) =>
             {
-                if (statusUrls is not null) lock (statusUrls) statusUrls.Add(url);
+                if (statusUrls is not null) lock (statusUrls) statusUrls.Add(server?.StatusUrl);
                 return Task.FromResult(ServerStatusInfo.Unavailable("test"));
             });
 

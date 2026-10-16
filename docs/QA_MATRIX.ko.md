@@ -12,8 +12,13 @@ CI는 모든 PR에 대해 Windows·macOS·Linux에서 restore, build, 단위 테
 - 매니페스트 검증과 단계적 업데이트: HTTPS, SHA-256 재검증, 아카이브 경로 탈출, 아카이브
   한도, 취소, 드롭인 보존.
 - 모드로더 선택, Java 탐색/검증/팩토리 정책, `RamCalculator` 기반 RAM 정책.
+- Quilt·NeoForge 설치 분기(가짜 backend 사용)와 기존 설치 재사용. NeoForge `21.1.10` 요청이
+  설치된 `21.1.100`을 재사용하지 않음.
 - 서버 상태 파싱과 백오프, 멀티플레이 목록(`servers.dat`) 기록기(수정 UTF-8 왕복 및 병합
   보존 포함).
+- Server List Ping(SLP): VarInt·핸드셰이크 인코딩, 로컬 가짜 서버와의 왕복, description 2종(문자열,
+  컴포넌트 객체) 파싱, 타임아웃·닫힌 포트·과대 길이 응답의 오프라인 변환, `statusUrl` 실패 시
+  SLP 대체.
 - `options.txt` 대상 편집과 리소스팩 순서.
 - 콘텐츠 탭 동작: 모든 `OptionsEditStatus` 분기가 사용자에게 전달되고, 서버 필수 팩은 이동·
   비활성화 시 예외 대신 메시지를 내며, 선택형 모듈 토글이 하위로 연쇄되고 저장되며, 매니페스트
@@ -44,6 +49,8 @@ CI는 모든 PR에 대해 Windows·macOS·Linux에서 restore, build, 단위 테
 리소스팩 드래그앤드롭 순서 변경은 포인터·`DragDrop` 이벤트로 구동되어 수동으로만 확인합니다.
 ▲▼ 버튼은 단위 테스트된 동일한 `MoveToAsync` 진입점을 호출하므로, 제스처 자체는 아니어도
 순서 규칙은 커버됩니다.
+
+실제 NeoForge·Quilt 설치와 실서버에 대한 SLP 상태 확인은 자동화되어 있지 않습니다.
 
 ## 수동 릴리스 게이트
 

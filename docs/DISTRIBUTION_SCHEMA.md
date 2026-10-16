@@ -28,11 +28,11 @@ launcher. Each entry has these fields:
 | `address` | yes | Server address. |
 | `port` | no | 1–65535. Defaults to 25565. |
 | `minecraftVersion` | yes | Minecraft version, for example `1.20.1`. |
-| `modLoader` | yes | Object with `type` and `version`. `type` is `forge`, `fabric`, `neoforge`, `quilt`, or `vanilla` (lowercase). `version` is required for every type except `vanilla`. `neoforge` and `quilt` pass validation, but launching them reports an unsupported mod loader; installing them is not supported yet. |
+| `modLoader` | yes | Object with `type` and `version`. `type` is `forge`, `fabric`, `neoforge`, `quilt`, or `vanilla` (lowercase). `version` is required for every type except `vanilla`. The launcher installs `forge`, `fabric`, `neoforge`, and `quilt` when they are not already installed. For `neoforge`, `version` is the NeoForge version (for example `21.1.100`, used with Minecraft `1.21.1`). For `quilt`, `version` is the Quilt Loader version (for example `0.29.1`). |
 | `java` | yes | `minVersion`, `recommendedVersion`, and optional `minRamMb`. Same structure as the single-server `java`. |
 | `modules` | yes | Module list following the module rules above. |
 | `discord` | no | Optional `details`, `state`, `largeImageKey`. When `details` is set, it replaces the server name in the Discord status. `state` is reserved; the launcher does not use it yet. |
-| `statusUrl` | no | Absolute `https` URL for the status check. If omitted, the launcher's built-in status API is used. |
+| `statusUrl` | no | Absolute `https` URL for the status check. When set, the launcher queries this status API first and uses its result if the request succeeds (no response time is shown). If it is omitted or the request fails, the launcher sends a Minecraft Server List Ping (SLP) directly to `address:port` to read the player count, MOTD, version name, and response time in ms. If a firewall blocks direct connections to the server port, set `statusUrl`. |
 
 Each server has its own game folder. A server whose `id` is `default` (including the old single-server format) uses the configured game folder as-is; every other server uses `{game folder}/instances/{server id}`, so its mods, shader packs, resource packs, options, servers.dat, logs, crash-reports, and saves are kept separately. Minecraft's shared files (libraries, versions, assets), the manifest cache, and the Java runtime are shared. Offline availability is judged per server folder. When the player switches servers and launches, the server-managed mods are synchronized again for the newly selected server. The server selector appears only when
 there are two or more servers.

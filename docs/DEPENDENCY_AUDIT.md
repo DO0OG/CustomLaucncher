@@ -10,6 +10,7 @@ Korean version: [DEPENDENCY_AUDIT.ko.md](DEPENDENCY_AUDIT.ko.md)
 | CmlLib.Core | 4.0.6 | Minecraft install and launch orchestration (MIT) |
 | CmlLib.Core.Auth.Microsoft | 3.3.1 | Minecraft/Xbox authentication pipeline (MIT) |
 | CmlLib.Core.Installer.Forge | 1.1.1 | Forge installation (MIT) |
+| CmlLib.Core.Installer.NeoForge | 4.0.1 | NeoForge installation (MIT) |
 | XboxAuthNet.Game.Msal | 0.1.2 | MSAL browser + device-code providers and OS-protected token cache (MIT) |
 | SharpCompress | 0.50.5 | 7z extraction. Every entry is preflighted through `ModuleValidation` and streamed. |
 | Velopack | 1.2.0 | Startup hook only (`VelopackApp.Build().Run()`). No update check/apply UI or update feed yet (MIT) |
@@ -35,5 +36,7 @@ pin noted below.
   is part of the Avalonia stack rather than a new runtime feature, so it is not added to the
   in-app license list (`Views/AboutWindow.axaml`). Once Avalonia is upgraded to a version that
   pulls in Tmds.DBus.Protocol 0.21.3 or later, the pin can be removed.
+- HtmlAgilityPack is a transitive dependency of CmlLib.Core.Installer.NeoForge (MIT). It is a
+  pure parsing library used by the installer, so it is not added to the in-app license list.
 
 Keep this file and `Views/AboutWindow.axaml` in sync whenever a runtime dependency changes.

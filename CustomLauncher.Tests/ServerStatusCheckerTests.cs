@@ -49,6 +49,7 @@ public sealed class ServerStatusCheckerTests
     [Fact]
     public async Task CheckAsync_UsesLauncherUserAgentAndFallsBackOnMalformedJson()
     {
+        var closedPort = FakeStatusServer.ClosedPort();
         var handler = new Handler(request =>
         {
             Assert.Equal(LauncherConfig.UserAgent, request.Headers.UserAgent.ToString());
@@ -56,10 +57,61 @@ public sealed class ServerStatusCheckerTests
         });
         var checker = new ServerStatusChecker(new HttpClient(handler), "https://example.invalid/status");
 
-        var result = await checker.CheckAsync();
+        var result = await checker.CheckAsync("127.0.0.1", closedPort);
 
         Assert.False(result.RequestSucceeded);
         Assert.False(result.IsOnline);
+    }
+
+    [Fact]
+    public async Task CheckAsync_PingsTheServerWhenNoStatusUrlIsGiven()
+    {
+        var handler = new Handler(_ => throw new InvalidOperationException("HTTP must not be used."));
+        await using var server = new FakeStatusServer(ServeStatusAsync);
+        var checker = new ServerStatusChecker(new HttpClient(handler));
+
+        var result = await checker.CheckAsync("127.0.0.1", server.Port);
+
+        Assert.True(result.IsOnline);
+        Assert.Equal(7, result.OnlinePlayers);
+        Assert.NotNull(result.PingMilliseconds);
+    }
+
+    [Fact]
+    public async Task CheckAsync_PingsTheServerWhenTheHttpRequestFails()
+    {
+        var handler = new Handler(_ => new HttpResponseMessage(HttpStatusCode.InternalServerError));
+        await using var server = new FakeStatusServer(ServeStatusAsync);
+        var checker = new ServerStatusChecker(new HttpClient(handler), "https://example.invalid/status");
+
+        var result = await checker.CheckAsync("127.0.0.1", server.Port);
+
+        Assert.True(result.IsOnline);
+        Assert.Equal(7, result.OnlinePlayers);
+    }
+
+    [Fact]
+    public async Task CheckAsync_UsesTheHttpResultWithoutPingingWhenItSucceeds()
+    {
+        var handler = new Handler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"online":true,"players":{"online":1,"max":2}}"""),
+        });
+        var checker = new ServerStatusChecker(new HttpClient(handler), "https://example.invalid/status");
+
+        var result = await checker.CheckAsync("127.0.0.1", FakeStatusServer.ClosedPort());
+
+        Assert.True(result.IsOnline);
+        Assert.Equal(1, result.OnlinePlayers);
+        Assert.Null(result.PingMilliseconds);
+    }
+
+    private static async Task ServeStatusAsync(System.Net.Sockets.NetworkStream stream, CancellationToken token)
+    {
+        await FakeStatusServer.ReadPacketAsync(stream, token);
+        await FakeStatusServer.ReadPacketAsync(stream, token);
+        await FakeStatusServer.SendStatusAsync(stream, """{"players":{"online":7,"max":10},"description":"x"}""", token);
+        await stream.WriteAsync(FakeStatusServer.Frame(await FakeStatusServer.ReadPacketAsync(stream, token)), token);
     }
 
     [Fact]
@@ -74,7 +126,7 @@ public sealed class ServerStatusCheckerTests
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => checker.CheckAsync(cancellation.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => checker.CheckAsync("127.0.0.1", 25565, cancellation.Token));
     }
 
     private sealed class Handler : HttpMessageHandler

@@ -38,6 +38,52 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Diagnose file encodings on runner (temporary)
+        run: |
+          python3 - <<'PY'
+          import os
+          bad=0
+          for root,dirs,files in os.walk('.'):
+              if '/.git' in root: continue
+              for f in files:
+                  p=os.path.join(root,f); b=open(p,'rb').read()
+                  if b'\x00' in b[:8000]: continue
+                  try: b.decode('utf-8')
+                  except UnicodeDecodeError as e: bad+=1; print('NOT UTF-8:',p,e.start,b[max(0,e.start-40):e.start+4])
+          print('non-utf8 files:',bad)
+          PY
+          locale; echo "LANG=$LANG"; git config --get core.autocrlf || true
+      - name: Codacy JSON run (temporary diagnostic)
+        continue-on-error: true
+        run: |
+          docker run --rm \
+            --env CODACY_CODE="$GITHUB_WORKSPACE" \
+            --env JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF-8" \
+            --volume /var/run/docker.sock:/var/run/docker.sock \
+            --volume "$GITHUB_WORKSPACE":"$GITHUB_WORKSPACE" \
+            --volume /tmp:/tmp \
+            codacy/codacy-analysis-cli:4.0.0 -- \
+            analyze --directory "$GITHUB_WORKSPACE" --tool sonarscharp --format json --output "$GITHUB_WORKSPACE/results.json" \
+            --max-allowed-issues 2147483647 || true
+          python3 - <<'PY'
+          import json,os
+          try: data=json.load(open('results.json',encoding='utf-8'))
+          except Exception as e: print('no json:',e); raise SystemExit
+          names=set()
+          def walk(o):
+              if isinstance(o,dict):
+                  if 'filename' in o: names.add(o['filename'])
+                  for v in o.values(): walk(v)
+              elif isinstance(o,list):
+                  for v in o: walk(v)
+          walk(data)
+          print('files with results:',len(names))
+          for n in sorted(names):
+              try: open(n,'rb').read().decode('utf-8')
+              except FileNotFoundError: print('MISSING:',n)
+              except UnicodeDecodeError as e: print('NOT UTF-8:',n,e.start)
+          PY
+
       # Codacy Analysis CLI를 직접 실행합니다. 공식 action의 실행 스크립트는 컨테이너에
       # JAVA_TOOL_OPTIONS를 넘기지 않아 SARIF 작성 단계가 한국어 줄에서 MalformedInputException으로
       # 중단되므로, 같은 docker 호출에 UTF-8 설정만 더해 실행합니다.

@@ -14,6 +14,8 @@ public interface ILauncherService : IDisposable
         MSession session,
         IProgress<LaunchProgress>? progress = null,
         CancellationToken cancellationToken = default);
+
+    Task<ModuleUpdateResult> RepairContentAsync(LauncherSettings settings, IProgress<LaunchProgress>? progress = null, CancellationToken cancellationToken = default);
 }
 
 public sealed class LauncherService : ILauncherService
@@ -45,6 +47,17 @@ public sealed class LauncherService : ILauncherService
             settings.Java.ExecutablePath = option.JavaPath;
             return result;
         }
+        finally { _activeSettings = null; }
+    }
+
+    public async Task<ModuleUpdateResult> RepairContentAsync(
+        LauncherSettings settings,
+        IProgress<LaunchProgress>? progress = null,
+        CancellationToken cancellationToken = default)
+    {
+        _activeSettings = settings;
+        EnsureLauncher(settings.InstallPath);
+        try { return await _preparer!.RepairAsync(progress, cancellationToken); }
         finally { _activeSettings = null; }
     }
 

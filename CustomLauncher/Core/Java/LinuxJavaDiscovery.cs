@@ -34,6 +34,7 @@ public sealed class LinuxJavaDiscovery : IJavaDiscovery
         }
         catch (Exception exception) when (exception is InvalidOperationException or IOException or System.ComponentModel.Win32Exception or OperationCanceledException)
         {
+            /* update-alternatives가 없거나 실행할 수 없으면 이 탐색 경로는 건너뛰고 나머지 후보로 계속합니다. */
         }
 
         if (result?.ExitCode == 0)

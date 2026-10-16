@@ -10,6 +10,7 @@ public interface IContentUpdateService
     bool HasManagedState(string serverId);
     Task<ServerDistribution> FetchAsync(CancellationToken cancellationToken);
     Task<ModuleUpdateResult> UpdateAsync(ServerDistribution distribution, CancellationToken cancellationToken);
+    Task<ModuleUpdateResult> RepairAsync(ServerDistribution distribution, IProgress<LaunchProgress>? progress, CancellationToken cancellationToken);
     Task SaveCacheAsync(ServerDistribution distribution, CancellationToken cancellationToken);
     Task<ServerDistribution?> TryLoadCacheAsync(CancellationToken cancellationToken);
 }
@@ -47,7 +48,13 @@ public sealed class ContentUpdateService : IContentUpdateService
             .FetchDistributionAsync(LauncherConfig.ManifestUrl, cancellationToken));
 
     public Task<ModuleUpdateResult> UpdateAsync(ServerDistribution distribution, CancellationToken cancellationToken) =>
-        ManagerFor(distribution.ServerId).UpdateAsync(distribution, cancellationToken);
+        ManagerFor(distribution.ServerId).UpdateAsync(distribution, cancellationToken: cancellationToken);
+
+    public Task<ModuleUpdateResult> RepairAsync(
+        ServerDistribution distribution,
+        IProgress<LaunchProgress>? progress,
+        CancellationToken cancellationToken) =>
+        ManagerFor(distribution.ServerId).UpdateAsync(distribution, true, progress, cancellationToken);
 
     public async Task SaveCacheAsync(ServerDistribution distribution, CancellationToken cancellationToken)
     {

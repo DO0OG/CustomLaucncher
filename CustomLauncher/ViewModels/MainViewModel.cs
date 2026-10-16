@@ -27,6 +27,11 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     private IDiscordPresenceService? _discord;
     private ProcessWrapper? _gameProcessWrapper;
     private Process? _gameProcess;
+    private static readonly TimeSpan GameLogFlushDelay = TimeSpan.FromMilliseconds(100);
+    private readonly GameLogBuffer _gameLogBuffer = new();
+    private string _gameLog = string.Empty;
+    private bool _collectGameLog;
+    private int _gameLogFlushPending;
     private readonly Func<ServerEntry?, CancellationToken, Task<ServerStatusInfo>> _checkStatus;
     private IReadOnlyList<ServerEntry> _servers = [];
     private ServerEntry? _selectedServer;
@@ -79,8 +84,10 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         AddAccountCommand = new AsyncCommand(AddAccountAsync, () => !Busy && AuthConfigured);
         LogoutCommand = new AsyncCommand(LogoutAsync, () => !Busy && _session is not null);
         LaunchCommand = new AsyncCommand(LaunchAsync, () => !Busy && _session is not null);
+        RepairCommand = new AsyncCommand(RepairFilesAsync, () => !Busy);
         CancelCommand = new RelayCommand(CancelCurrentOperation, () => Busy && _currentOperation is not null);
         OpenSettingsCommand = new RelayCommand(() => SettingsRequested?.Invoke(this, EventArgs.Empty));
+        OpenLogFolderCommand = new RelayCommand(OpenLogFolder);
     }
 
     public event EventHandler? SettingsRequested;
@@ -91,7 +98,10 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     public ICommand AddAccountCommand { get; }
     public ICommand LogoutCommand { get; }
     public ICommand LaunchCommand { get; }
+    public ICommand RepairCommand { get; }
     public ICommand CancelCommand { get; }
+    public ICommand OpenLogFolderCommand { get; }
+    public string GameLog { get => _gameLog; private set => SetProperty(ref _gameLog, value); }
     public ICommand OpenSettingsCommand { get; }
     public AppPaths Paths => _paths;
     public string AppDisplayName => LauncherConfig.GameLauncherName;
@@ -497,12 +507,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         Status = "게임 파일을 준비하는 중...";
         try
         {
-            var progress = new Progress<LaunchProgress>(value => Dispatcher.UIThread.Post(() =>
-            {
-                Progress = value.Ratio * 100;
-                Status = value.ToStatusText();
-            }));
-            var prepared = await _launcher.PrepareGameSessionAsync(_settings, _session, progress, operation.Token);
+            var prepared = await _launcher.PrepareGameSessionAsync(_settings, _session, CreateProgress(operation), operation.Token);
             AttachGameProcess(prepared.Process);
             _gameProcessWrapper!.StartWithEvents();
             _discord?.SetState(DiscordPresenceState.Playing);
@@ -528,6 +533,52 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         }
     }
 
+    public async Task RepairFilesAsync()
+    {
+        if (Busy) return;
+        using var operation = BeginOperation();
+        Busy = true;
+        Status = "파일을 검증하는 중...";
+        try
+        {
+            var result = await _launcher.RepairContentAsync(_settings, CreateProgress(operation), operation.Token);
+            switch (result.Status)
+            {
+                case ModuleUpdateStatus.Cancelled:
+                    Status = "파일 검증이 취소되었습니다.";
+                    break;
+                case ModuleUpdateStatus.Failed:
+                    await _logger.WriteAsync(LauncherLogLevel.Error, $"File repair failed: {result.Error}");
+                    Status = "파일 복구에 실패했습니다. 기존 파일은 그대로 유지됩니다.";
+                    break;
+                default:
+                    Status = $"검증 {result.VerifiedCount}개, 복구 {result.UpdatedModuleIds.Count}개";
+                    break;
+            }
+        }
+        catch (OperationCanceledException) when (operation.IsCancellationRequested)
+        {
+            Status = "파일 검증이 취소되었습니다.";
+        }
+        catch (Exception exception)
+        {
+            await _logger.WriteAsync(LauncherLogLevel.Error, "File repair failed", exception);
+            Status = "파일 검증 중 오류가 발생했습니다. 네트워크와 로그를 확인해 주세요.";
+        }
+        finally
+        {
+            Busy = false;
+            EndOperation(operation);
+        }
+    }
+
+    private Progress<LaunchProgress> CreateProgress(CancellationTokenSource operation) => new(value => Dispatcher.UIThread.Post(() =>
+    {
+        if (!ReferenceEquals(_currentOperation, operation)) return;
+        Progress = value.Ratio * 100;
+        Status = value.ToStatusText();
+    }));
+
     public void CancelCurrentOperation() => _currentOperation?.Cancel();
 
     private CancellationTokenSource BeginOperation()
@@ -547,6 +598,9 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     private void AttachGameProcess(Process process)
     {
         DetachGameProcess();
+        _gameLogBuffer.Clear();
+        GameLog = string.Empty;
+        Volatile.Write(ref _collectGameLog, true);
         _gameProcess = process;
         _gameProcessWrapper = new ProcessWrapper(process);
         _gameProcessWrapper.OutputReceived += OnGameOutputReceived;
@@ -565,8 +619,61 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         _gameProcess = null;
     }
 
-    private void OnGameOutputReceived(object? sender, string line) =>
+    private void OnGameOutputReceived(object? sender, string line)
+    {
         _ = _logger.WriteAsync(LauncherLogLevel.Debug, $"[GAME] {line}");
+        if (!Volatile.Read(ref _collectGameLog)) return;
+        try
+        {
+            _gameLogBuffer.Append(line);
+            if (Interlocked.Exchange(ref _gameLogFlushPending, 1) == 0) _ = FlushGameLogLaterAsync();
+        }
+        catch (Exception exception)
+        {
+            // Console collection stops; the game process and the file log are left alone.
+            Volatile.Write(ref _collectGameLog, false);
+            _ = _logger.WriteAsync(LauncherLogLevel.Error, "Game console collection stopped", exception);
+        }
+    }
+
+    private async Task FlushGameLogLaterAsync()
+    {
+        await Task.Delay(GameLogFlushDelay);
+        Dispatcher.UIThread.Post(FlushGameLog);
+    }
+
+    private void FlushGameLog()
+    {
+        Volatile.Write(ref _gameLogFlushPending, 0);
+        if (_gameLogBuffer.TryTakeSnapshot(out var text)) GameLog = text;
+    }
+
+    private string InstallRoot() =>
+        string.IsNullOrWhiteSpace(_settings.InstallPath) ? _paths.DefaultGameDir : _settings.InstallPath;
+
+    private string CurrentServerId() => _selectedServer?.Id ?? ServerCatalog.LegacyServerId;
+
+    /// <summary>The game's own log folder for one server under the install root.</summary>
+    public static string GameLogDirectory(string installPathOrDefault, string serverId) =>
+        Path.Combine(LauncherServers.GameDirectoryFor(installPathOrDefault, serverId), "logs");
+
+    /// <summary>Raised with the folder path when the user asks to open the game log folder; the window opens it with the platform launcher.</summary>
+    public event EventHandler<string>? OpenFolderRequested;
+
+    private void OpenLogFolder()
+    {
+        try
+        {
+            var path = GameLogDirectory(InstallRoot(), CurrentServerId());
+            Directory.CreateDirectory(path);
+            OpenFolderRequested?.Invoke(this, path);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            Status = "로그 폴더를 열지 못했습니다. 로그를 확인해 주세요.";
+            _ = _logger.WriteAsync(LauncherLogLevel.Error, "Opening the game log folder failed", exception);
+        }
+    }
 
     /// <summary>Message for a non-zero exit, pointing at the newest crash report and the game log when they exist.</summary>
     public static string DescribeAbnormalExit(int exitCode, string gameDirectory)
@@ -595,9 +702,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     {
         if (ReadExitCode() is not { } code || code == 0) return "게임이 종료되었습니다.";
         // The server cannot change while a game runs (switching is blocked while busy).
-        var gameDirectory = LauncherServers.GameDirectoryFor(
-            string.IsNullOrWhiteSpace(_settings.InstallPath) ? _paths.DefaultGameDir : _settings.InstallPath,
-            _selectedServer?.Id ?? ServerCatalog.LegacyServerId);
+        var gameDirectory = LauncherServers.GameDirectoryFor(InstallRoot(), CurrentServerId());
         try { return DescribeAbnormalExit(code, gameDirectory); }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -609,6 +714,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
     {
         var exitStatus = DescribeGameExit();
         DetachGameProcess();
+        FlushGameLog();
         Busy = false;
         Status = exitStatus;
         _discord?.SetState(DiscordPresenceState.Ready);
@@ -639,6 +745,7 @@ public sealed class MainViewModel : ViewModelBase, IAsyncDisposable
         ((AsyncCommand)AddAccountCommand).NotifyCanExecuteChanged();
         ((AsyncCommand)LogoutCommand).NotifyCanExecuteChanged();
         ((AsyncCommand)LaunchCommand).NotifyCanExecuteChanged();
+        ((AsyncCommand)RepairCommand).NotifyCanExecuteChanged();
         ((RelayCommand)CancelCommand).NotifyCanExecuteChanged();
     }
 

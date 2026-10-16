@@ -33,6 +33,43 @@ public sealed class MainViewModelLifecycleTests
     }
 
     [Fact]
+    public async Task RepairFilesReportsVerifiedAndRepairedCounts()
+    {
+        var home = Path.Combine(Path.GetTempPath(), $"launcher-repair-{Guid.NewGuid():N}");
+        var paths = new AppPaths(PlatformKind.Linux, home, new Dictionary<string, string?>());
+        var launcher = new StubLauncherService
+        {
+            RepairResult = new ModuleUpdateResult(ModuleUpdateStatus.Updated, ["mod-a"]) { VerifiedCount = 3 }
+        };
+        await using var viewModel = new MainViewModel(
+            paths, new AppSettingsManager(paths), new DebugLogger(paths), new BlockingAuthService(), launcher);
+
+        await viewModel.RepairFilesAsync();
+
+        Assert.Equal(1, launcher.RepairCalls);
+        Assert.Equal("검증 3개, 복구 1개", viewModel.Status);
+        Assert.False(viewModel.Busy);
+    }
+
+    [Fact]
+    public async Task RepairFilesFailureKeepsExistingFilesMessage()
+    {
+        var home = Path.Combine(Path.GetTempPath(), $"launcher-repair-fail-{Guid.NewGuid():N}");
+        var paths = new AppPaths(PlatformKind.Linux, home, new Dictionary<string, string?>());
+        var launcher = new StubLauncherService
+        {
+            RepairResult = new ModuleUpdateResult(ModuleUpdateStatus.Failed, [], "download failed")
+        };
+        await using var viewModel = new MainViewModel(
+            paths, new AppSettingsManager(paths), new DebugLogger(paths), new BlockingAuthService(), launcher);
+
+        await viewModel.RepairFilesAsync();
+
+        Assert.Equal("파일 복구에 실패했습니다. 기존 파일은 그대로 유지됩니다.", viewModel.Status);
+        Assert.False(viewModel.Busy);
+    }
+
+    [Fact]
     public async Task LogoutClearsSessionAndSwapsBackToTheSignInAction()
     {
         var home = Path.Combine(Path.GetTempPath(), $"launcher-logout-{Guid.NewGuid():N}");
@@ -463,6 +500,9 @@ public sealed class MainViewModelLifecycleTests
         public Task<ModuleUpdateResult> UpdateAsync(ServerDistribution distribution, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 
+        public Task<ModuleUpdateResult> RepairAsync(ServerDistribution distribution, IProgress<LaunchProgress>? progress, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
         public Task SaveCacheAsync(ServerDistribution distribution, CancellationToken cancellationToken)
         {
             SaveCacheCalls++;
@@ -476,6 +516,18 @@ public sealed class MainViewModelLifecycleTests
     private sealed class StartingLauncherService : ILauncherService
     {
         public bool Fail { get; init; }
+
+        public int RepairCalls { get; private set; }
+        public ModuleUpdateResult RepairResult { get; set; } = new(ModuleUpdateStatus.UpToDate, []);
+
+        public Task<ModuleUpdateResult> RepairContentAsync(
+            LauncherSettings settings,
+            IProgress<LaunchProgress>? progress = null,
+            CancellationToken cancellationToken = default)
+        {
+            RepairCalls++;
+            return Task.FromResult(RepairResult);
+        }
 
         public Task<PreparedGameSession> PrepareGameSessionAsync(
             LauncherSettings settings,
@@ -578,6 +630,18 @@ public sealed class MainViewModelLifecycleTests
 
     private sealed class StubLauncherService : ILauncherService
     {
+        public int RepairCalls { get; private set; }
+        public ModuleUpdateResult RepairResult { get; set; } = new(ModuleUpdateStatus.UpToDate, []);
+
+        public Task<ModuleUpdateResult> RepairContentAsync(
+            LauncherSettings settings,
+            IProgress<LaunchProgress>? progress = null,
+            CancellationToken cancellationToken = default)
+        {
+            RepairCalls++;
+            return Task.FromResult(RepairResult);
+        }
+
         public Task<PreparedGameSession> PrepareGameSessionAsync(
             LauncherSettings settings,
             MSession session,

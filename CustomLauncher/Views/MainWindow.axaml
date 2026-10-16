@@ -8,7 +8,7 @@
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaTitleBarHeightHint="44">
 
-  <Grid RowDefinitions="44,*,Auto,Auto">
+  <Grid RowDefinitions="44,*,Auto,Auto,Auto">
 
     <!-- Title bar. Chrome hints are off, so these are the only window buttons;
          previously the system drew its own on top of ours. -->
@@ -85,13 +85,24 @@
       </Border>
     </StackPanel>
 
+    <!-- Collapsed by default; expands inside the window instead of opening a new one. -->
+    <Expander Grid.Row="2" Header="게임 로그" IsExpanded="False" Margin="20,0,20,8">
+      <StackPanel Spacing="8">
+        <TextBox Text="{Binding GameLog, Mode=OneWay}" IsReadOnly="True" Classes="mono"
+                 TextWrapping="Wrap" MaxHeight="180" AcceptsReturn="True"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto" />
+        <Button Content="로그 폴더 열기" Command="{Binding OpenLogFolderCommand}"
+                HorizontalAlignment="Left" />
+      </StackPanel>
+    </Expander>
+
     <!-- Progress spans the window so it reads as overall launcher activity. -->
-    <ProgressBar Grid.Row="2" Height="3" Minimum="0" Maximum="100" Value="{Binding Progress}"
+    <ProgressBar Grid.Row="3" Height="3" Minimum="0" Maximum="100" Value="{Binding Progress}"
                  IsVisible="{Binding Busy}" Background="Transparent"
                  Foreground="{StaticResource AccentBrush}" />
 
     <!-- Action bar: status on the left, the one primary action on the right. -->
-    <Border Grid.Row="3" Background="{StaticResource SurfaceBrush}"
+    <Border Grid.Row="4" Background="{StaticResource SurfaceBrush}"
             BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Padding="20,14">
       <Grid ColumnDefinitions="*,Auto">
         <!-- Errors are sentences, not labels: wrap rather than truncate the explanation. -->
@@ -107,6 +118,7 @@
                   IsVisible="{Binding IsAuthenticated}" />
           <Button Content="이 계정 로그아웃" Command="{Binding LogoutCommand}"
                   IsVisible="{Binding IsAuthenticated}" />
+          <Button Content="파일 검증·복구" Command="{Binding RepairCommand}" />
           <Button Classes="accent" Content="게임 시작" Command="{Binding LaunchCommand}"
                   IsVisible="{Binding IsAuthenticated}" />
         </StackPanel>

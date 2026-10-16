@@ -8,7 +8,10 @@ namespace CustomLauncher.Core;
 
 public enum ModuleUpdateStatus { UpToDate, Updated, Cancelled, Failed }
 
-public sealed record ModuleUpdateResult(ModuleUpdateStatus Status, IReadOnlyList<string> UpdatedModuleIds, string? Error = null);
+public sealed record ModuleUpdateResult(ModuleUpdateStatus Status, IReadOnlyList<string> UpdatedModuleIds, string? Error = null)
+{
+    public int VerifiedCount { get; init; }
+}
 
 public sealed class ModuleManagerOptions
 {
@@ -51,10 +54,15 @@ public sealed class ModuleManager
         return distribution;
     }
 
-    public async Task<ModuleUpdateResult> UpdateAsync(ServerDistribution distribution, CancellationToken cancellationToken = default)
+    public async Task<ModuleUpdateResult> UpdateAsync(
+        ServerDistribution distribution,
+        bool verifyContents = false,
+        IProgress<LaunchProgress>? progress = null,
+        CancellationToken cancellationToken = default)
     {
         await _updateLock.WaitAsync(cancellationToken);
         var updated = new List<string>();
+        var verified = 0;
         var stagingRoot = Path.Combine(_gameDirectory, ".launcher-staging", Guid.NewGuid().ToString("N"));
         try
         {
@@ -71,38 +79,47 @@ public sealed class ModuleManager
                     preservedUnmanagedPaths.UnionWith(formerlyManaged.Paths);
             }
 
-            foreach (var module in distribution.Modules.Where(module => module.IsServerManaged))
+            var managed = distribution.Modules.Where(module => module.IsServerManaged).ToList();
+            foreach (var module in managed)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 if (previous.Modules.TryGetValue(module.Id, out var installed) &&
-                    await IsInstalledCurrentAsync(module, installed, cancellationToken))
+                    await IsInstalledCurrentAsync(module, installed, verifyContents, cancellationToken))
                 {
                     desired.Modules[module.Id] = installed;
-                    continue;
+                }
+                else
+                {
+                    var artifact = await DownloadAndVerifyAsync(module, stagingRoot, cancellationToken);
+                    var record = module.Packaging == ModulePackaging.Archive
+                        ? await StageArchiveAsync(module, artifact, stagingRoot, stagedFiles, cancellationToken)
+                        : StageFile(module, artifact, stagedFiles);
+                    desired.Modules[module.Id] = record;
+                    updated.Add(module.Id);
                 }
 
-                var artifact = await DownloadAndVerifyAsync(module, stagingRoot, cancellationToken);
-                var record = module.Packaging == ModulePackaging.Archive
-                    ? await StageArchiveAsync(module, artifact, stagingRoot, stagedFiles, cancellationToken)
-                    : StageFile(module, artifact, stagedFiles);
-                desired.Modules[module.Id] = record;
-                updated.Add(module.Id);
+                verified++;
+                progress?.Report(new LaunchProgress("파일 검증", verified / (double)managed.Count)
+                {
+                    FilesDone = verified,
+                    FilesTotal = managed.Count,
+                });
             }
 
             if (updated.Count == 0 && StateEquivalent(previous, desired))
-                return new ModuleUpdateResult(ModuleUpdateStatus.UpToDate, updated);
+                return new ModuleUpdateResult(ModuleUpdateStatus.UpToDate, updated) { VerifiedCount = verified };
 
             EnsureUniqueOwnedPaths(desired);
             await CommitAsync(previous, desired, stagedFiles, preservedUnmanagedPaths, stagingRoot, cancellationToken);
-            return new ModuleUpdateResult(ModuleUpdateStatus.Updated, updated);
+            return new ModuleUpdateResult(ModuleUpdateStatus.Updated, updated) { VerifiedCount = verified };
         }
         catch (OperationCanceledException)
         {
-            return new ModuleUpdateResult(ModuleUpdateStatus.Cancelled, updated);
+            return new ModuleUpdateResult(ModuleUpdateStatus.Cancelled, updated) { VerifiedCount = verified };
         }
         catch (Exception exception)
         {
-            return new ModuleUpdateResult(ModuleUpdateStatus.Failed, updated, exception.Message);
+            return new ModuleUpdateResult(ModuleUpdateStatus.Failed, updated, exception.Message) { VerifiedCount = verified };
         }
         finally
         {
@@ -194,7 +211,14 @@ public sealed class ModuleManager
             paths.Add(relative);
         }
 
-        return new ManagedModuleRecord { Hash = module.Hash, Paths = paths };
+        var fileHashes = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var relative in paths)
+        {
+            await using var staged = File.OpenRead(stagedFiles[relative]);
+            fileHashes[relative] = Convert.ToHexString(await SHA256.HashDataAsync(staged, token)).ToLowerInvariant();
+        }
+
+        return new ManagedModuleRecord { Hash = module.Hash, Paths = paths, ArchiveHash = module.Hash, FileHashes = fileHashes };
     }
 
     private async Task CommitAsync(
@@ -264,6 +288,7 @@ public sealed class ModuleManager
     private async Task<bool> IsInstalledCurrentAsync(
         DistroModule module,
         ManagedModuleRecord installed,
+        bool verifyContents,
         CancellationToken token)
     {
         if (!string.Equals(installed.Hash, module.Hash, StringComparison.OrdinalIgnoreCase) || installed.Paths.Count == 0)
@@ -275,10 +300,31 @@ public sealed class ModuleManager
             if (!File.Exists(path))
                 return false;
         }
+        if (module.Packaging == ModulePackaging.Archive)
+        {
+            // Records written before archive hashes were stored cannot be trusted; fetch the archive again.
+            if (!string.Equals(installed.ArchiveHash, module.Hash, StringComparison.OrdinalIgnoreCase))
+                return false;
+            return !verifyContents || await ExtractedFilesMatchAsync(installed, token);
+        }
         if (module.Packaging != ModulePackaging.File || installed.Paths.Count != 1)
             return true;
         await using var stream = File.OpenRead(ModuleValidation.ResolvePath(_gameDirectory, installed.Paths[0]));
         return ModuleValidation.HashEquals(module.Hash, await SHA256.HashDataAsync(stream, token));
+    }
+
+    private async Task<bool> ExtractedFilesMatchAsync(ManagedModuleRecord installed, CancellationToken token)
+    {
+        foreach (var relative in installed.Paths)
+        {
+            if (installed.FileHashes?.GetValueOrDefault(relative) is not { } expected)
+                return false;
+            await using var stream = File.OpenRead(ModuleValidation.ResolvePath(_gameDirectory, relative));
+            var actual = Convert.ToHexString(await SHA256.HashDataAsync(stream, token));
+            if (!string.Equals(expected, actual, StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
+        return true;
     }
 
     private static void EnsureUniqueOwnedPaths(ManagedModuleState state)
@@ -315,7 +361,7 @@ public sealed class ModuleManager
     private static void TryDeleteDirectory(string path)
     {
         try { if (Directory.Exists(path)) Directory.Delete(path, true); }
-        catch (IOException) { }
-        catch (UnauthorizedAccessException) { }
+        catch (IOException) { /* 디렉터리 정리 실패는 무시합니다. */ }
+        catch (UnauthorizedAccessException) { /* 디렉터리 정리 실패는 무시합니다. */ }
     }
 }

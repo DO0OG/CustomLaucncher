@@ -69,7 +69,7 @@ public abstract class ContentTabViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>Lets derived tabs refresh their own command states when busy toggles.</summary>
-    protected virtual void OnBusyChanged() { }
+    protected virtual void OnBusyChanged() { /* 기본 구현은 할 일이 없습니다. 파생 탭이 필요할 때 재정의합니다. */ }
 
     /// <summary>Turns an options-file edit result into something the user can act on.</summary>
     protected static string DescribeOptionsResult(OptionsEditStatus status, string appliedMessage) => status switch

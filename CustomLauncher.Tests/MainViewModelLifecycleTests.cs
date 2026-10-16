@@ -217,7 +217,7 @@ public sealed class MainViewModelLifecycleTests
     [Fact]
     public async Task PickingAnAccountWhileBusyDoesNothing()
     {
-        var auth = new MultiAccountAuthService(One, Two) { Added = Three, Gate = new(TaskCreationOptions.RunContinuationsAsynchronously) };
+        var auth = new MultiAccountAuthService(One, Two) { Added = Three, Gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously) };
         await using var viewModel = await CreateAccountViewModelAsync(auth, One.Id);
 
         var adding = viewModel.AddAccountAsync();

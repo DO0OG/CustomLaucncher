@@ -1,7 +1,7 @@
-using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using CustomLauncher.ViewModels;
 
 namespace CustomLauncher.Views;
@@ -16,6 +16,7 @@ public partial class MainWindow : Window
             if (DataContext is not MainViewModel vm) return;
             vm.SettingsRequested += ShowSettings;
             vm.CloseRequested += (_, _) => Close();
+            vm.OpenFolderRequested += async (_, path) => await Launcher.LaunchDirectoryInfoAsync(new DirectoryInfo(path));
         };
         Activated += (_, _) => { if (DataContext is MainViewModel vm) vm.WindowActive = true; };
         Deactivated += (_, _) => { if (DataContext is MainViewModel vm) vm.WindowActive = false; };
@@ -36,10 +37,10 @@ public partial class MainWindow : Window
             await Clipboard.SetTextAsync(vm.DeviceCode);
     }
 
-    private void OpenDeviceCodeUrlClicked(object? sender, RoutedEventArgs e)
+    private async void OpenDeviceCodeUrlClicked(object? sender, RoutedEventArgs e)
     {
         if (DataContext is MainViewModel vm && Uri.TryCreate(vm.DeviceCodeUrl, UriKind.Absolute, out var uri))
-            Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
+            await Launcher.LaunchUriAsync(uri);
     }
 
     private async void ShowSettings(object? sender, EventArgs e)

@@ -38,82 +38,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Diagnose file encodings on runner (temporary)
-        run: |
-          python3 - <<'PY'
-          import os
-          bad=0
-          for root,dirs,files in os.walk('.'):
-              if '/.git' in root: continue
-              for f in files:
-                  p=os.path.join(root,f); b=open(p,'rb').read()
-                  if b'\x00' in b[:8000]: continue
-                  try: b.decode('utf-8')
-                  except UnicodeDecodeError as e: bad+=1; print('NOT UTF-8:',p,e.start,b[max(0,e.start-40):e.start+4])
-          print('non-utf8 files:',bad)
-          PY
-          locale; echo "LANG=$LANG"; git config --get core.autocrlf || true
-      - name: Image java properties (temporary diagnostic)
-        run: docker run --rm --entrypoint java codacy/codacy-analysis-cli:4.0.0 -XshowSettings:properties -version 2>&1 | grep -E 'encoding|java.version' || true
-      - name: Java 8 readAllLines check (temporary diagnostic)
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '8'
-      - name: Run Java 8 readAllLines over all source files (temporary diagnostic)
-        run: |
-          mkdir -p /tmp/jread && cat > /tmp/jread/ReadAll.java <<'JAVA'
-          import java.nio.file.*; import java.util.*; import java.io.*;
-          public class ReadAll { public static void main(String[] a) throws Exception {
-            final List<String> fails = new ArrayList<String>();
-            Files.walkFileTree(Paths.get(a[0]), new SimpleFileVisitor<Path>() {
-              public FileVisitResult visitFile(Path p, java.nio.file.attribute.BasicFileAttributes attrs) {
-                String n = p.toString();
-                if (n.contains("/.git/")) return FileVisitResult.CONTINUE;
-                if (!(n.endsWith(".cs") || n.endsWith(".md") || n.endsWith(".json") || n.endsWith(".axaml") || n.endsWith(".yml"))) return FileVisitResult.CONTINUE;
-                try { Files.readAllLines(p); } catch (Exception e) { fails.add(n + " : " + e); }
-                return FileVisitResult.CONTINUE; } });
-            for (String f : fails) System.out.println("JAVA8 FAIL " + f);
-            System.out.println("JAVA8 checked, failures=" + fails.size());
-          }}
-          JAVA
-          javac -d /tmp/jread /tmp/jread/ReadAll.java && java -cp /tmp/jread ReadAll "$GITHUB_WORKSPACE"
-          java -XshowSettings:properties -version 2>&1 | grep -E 'file.encoding|java.version' || true
-      - name: Codacy JSON run (temporary diagnostic)
-        continue-on-error: true
-        run: |
-          docker run --rm \
-            --env CODACY_CODE="$GITHUB_WORKSPACE" \
-            --env JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF-8" \
-            --volume /var/run/docker.sock:/var/run/docker.sock \
-            --volume "$GITHUB_WORKSPACE":"$GITHUB_WORKSPACE" \
-            --volume /tmp:/tmp \
-            codacy/codacy-analysis-cli:4.0.0 -- \
-            analyze --directory "$GITHUB_WORKSPACE" --tool sonarscharp --format json --output "$GITHUB_WORKSPACE/results.json" \
-            --max-allowed-issues 2147483647 || true
-          python3 - <<'PY'
-          import json,os
-          try: data=json.load(open('results.json',encoding='utf-8'))
-          except Exception as e: print('no json:',e); raise SystemExit
-          names=set()
-          def walk(o):
-              if isinstance(o,dict):
-                  if 'filename' in o: names.add(o['filename'])
-                  for v in o.values(): walk(v)
-              elif isinstance(o,list):
-                  for v in o: walk(v)
-          walk(data)
-          print('files with results:',len(names))
-          for n in sorted(names): print('RESULT FILE:',n)
-          for n in sorted(names):
-              try: open(n,'rb').read().decode('utf-8')
-              except FileNotFoundError: print('MISSING:',n)
-              except UnicodeDecodeError as e: print('NOT UTF-8:',n,e.start)
-          PY
-
       # Codacy Analysis CLI를 직접 실행합니다. 공식 action의 실행 스크립트는 컨테이너에
-      # JAVA_TOOL_OPTIONS를 넘기지 않아 SARIF 작성 단계가 한국어 줄에서 MalformedInputException으로
-      # 중단되므로, 같은 docker 호출에 UTF-8 설정만 더해 실행합니다.
+      # 환경 변수를 넘기지 않아 UTF-8을 지정할 수 없고, 설정 없는 ESLint처럼 실패한 도구의
+      # 결과를 SARIF로 바꾸는 단계가 MalformedInputException으로 중단되므로, 실제 결과를 내는
+      # Sonar C# 도구만 UTF-8 설정과 함께 돌립니다.
       - name: Run Codacy Analysis CLI
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
@@ -127,7 +55,7 @@ jobs:
             --volume "$GITHUB_WORKSPACE":"$GITHUB_WORKSPACE" \
             --volume /tmp:/tmp \
             codacy/codacy-analysis-cli:4.0.0 -- \
-            analyze --verbose --directory "$GITHUB_WORKSPACE" \
+            analyze --verbose --directory "$GITHUB_WORKSPACE" --tool sonarscharp \
             $([ -n "$CODACY_PROJECT_TOKEN" ] && echo "--project-token $CODACY_PROJECT_TOKEN") \
             --format sarif --output "$GITHUB_WORKSPACE/results.sarif" \
             --max-allowed-issues 2147483647 --gh-code-scanning-compat

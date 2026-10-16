@@ -256,26 +256,26 @@ public static class MinecraftServerPing
 
     private static void AppendText(JsonElement element, StringBuilder builder)
     {
-        switch (element.ValueKind)
+        if (element.ValueKind == JsonValueKind.String)
         {
-            case JsonValueKind.String:
-                builder.Append(element.GetString());
-                break;
-            case JsonValueKind.Object:
-                if (element.TryGetProperty("text", out var text) && text.ValueKind == JsonValueKind.String)
-                {
-                    builder.Append(text.GetString());
-                }
+            builder.Append(element.GetString());
+            return;
+        }
 
-                if (element.TryGetProperty("extra", out var extra) && extra.ValueKind == JsonValueKind.Array)
-                {
-                    foreach (var part in extra.EnumerateArray())
-                    {
-                        AppendText(part, builder);
-                    }
-                }
+        // 숫자·불리언·null 같은 다른 종류는 MOTD 본문이 아니므로 건너뜁니다.
+        if (element.ValueKind != JsonValueKind.Object) return;
 
-                break;
+        if (element.TryGetProperty("text", out var text) && text.ValueKind == JsonValueKind.String)
+        {
+            builder.Append(text.GetString());
+        }
+
+        if (element.TryGetProperty("extra", out var extra) && extra.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var part in extra.EnumerateArray())
+            {
+                AppendText(part, builder);
+            }
         }
     }
 }

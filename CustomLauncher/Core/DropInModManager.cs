@@ -8,5 +8,5 @@ public sealed class DropInModManager(string modsDirectory, IEnumerable<string>? 
     : DropInPackManagerBase(modsDirectory, serverManagedFiles)
 {
     protected override bool IsSupportedFile(string path) =>
-        string.Equals(Path.GetExtension(path), ".jar", StringComparison.OrdinalIgnoreCase);
+        string.Equals(Path.GetExtension(PackFile.EnabledNameOf(path)), ".jar", StringComparison.OrdinalIgnoreCase);
 }

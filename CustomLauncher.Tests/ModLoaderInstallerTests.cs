@@ -8,8 +8,8 @@ public sealed class ModLoaderInstallerTests
     public async Task ForgeAlreadyInstalled_DoesNotReinstall()
     {
         var backend = new FakeBackend(["1.20.1-forge-47.3.0"]);
-        var installer = new ModLoaderInstaller(backend, Config("forge"));
-        Assert.Equal("1.20.1-forge-47.3.0", await installer.EnsureInstalledAsync(null, default));
+        var installer = new ModLoaderInstaller(backend);
+        Assert.Equal("1.20.1-forge-47.3.0", await installer.EnsureInstalledAsync(Config("forge"), null, default));
         Assert.Equal(0, backend.ForgeInstalls);
     }
 
@@ -17,8 +17,8 @@ public sealed class ModLoaderInstallerTests
     public async Task ForgeInstall_UsesExactInstallerReturnValue()
     {
         var backend = new FakeBackend([]) { ForgeResult = "forge-returned-id" };
-        var installer = new ModLoaderInstaller(backend, Config("forge"));
-        Assert.Equal("forge-returned-id", await installer.EnsureInstalledAsync(null, default));
+        var installer = new ModLoaderInstaller(backend);
+        Assert.Equal("forge-returned-id", await installer.EnsureInstalledAsync(Config("forge"), null, default));
         Assert.Equal(1, backend.ForgeInstalls);
     }
 
@@ -26,13 +26,13 @@ public sealed class ModLoaderInstallerTests
     public async Task FabricAlreadyInstalledAndInstallUseBackendNames()
     {
         var backend = new FakeBackend(["fabric-official-id"]);
-        var installer = new ModLoaderInstaller(backend, Config("fabric"));
-        Assert.Equal("fabric-official-id", await installer.EnsureInstalledAsync(null, default));
+        var installer = new ModLoaderInstaller(backend);
+        Assert.Equal("fabric-official-id", await installer.EnsureInstalledAsync(Config("fabric"), null, default));
         Assert.Equal(0, backend.FabricInstalls);
 
         backend = new FakeBackend([]) { FabricResult = "fabric-returned-id" };
-        installer = new ModLoaderInstaller(backend, Config("fabric"));
-        Assert.Equal("fabric-returned-id", await installer.EnsureInstalledAsync(null, default));
+        installer = new ModLoaderInstaller(backend);
+        Assert.Equal("fabric-returned-id", await installer.EnsureInstalledAsync(Config("fabric"), null, default));
         Assert.Equal(1, backend.FabricInstalls);
     }
 
@@ -40,8 +40,8 @@ public sealed class ModLoaderInstallerTests
     public async Task NoneReturnsMinecraftVersionWithoutBackendCalls()
     {
         var backend = new FakeBackend([]);
-        var installer = new ModLoaderInstaller(backend, Config("none"));
-        Assert.Equal("1.20.1", await installer.EnsureInstalledAsync(null, default));
+        var installer = new ModLoaderInstaller(backend);
+        Assert.Equal("1.20.1", await installer.EnsureInstalledAsync(Config("none"), null, default));
         Assert.Equal(0, backend.VersionScans);
     }
 

@@ -159,6 +159,61 @@ public sealed class ManifestToolTests : IDisposable
         Assert.Contains(changes, change => change.StartsWith('~') && change.Contains("a.jar", StringComparison.Ordinal));
     }
 
+    private static ServerDistribution TwoServers(string alphaHash, bool withBeta = true)
+    {
+        var manifest = new ServerDistribution
+        {
+            Servers =
+            [
+                new ServerEntry
+                {
+                    Id = "alpha",
+                    Modules = [new DistroModule { Id = "a", Path = "mods/a.jar", Hash = alphaHash }],
+                },
+            ],
+        };
+        if (withBeta) manifest.Servers.Add(new ServerEntry { Id = "beta" });
+        return manifest;
+    }
+
+    [Fact]
+    public async Task GenerateRefusesToRewriteAMultiServerManifest()
+    {
+        WriteFile("mods/a.jar", "mod-a");
+        var existingPath = Path.Combine(_root, "existing.json");
+        await GenerateCommand.SaveAsync(TwoServers("aa"), existingPath);
+
+        var failure = await Assert.ThrowsAsync<InvalidDataException>(() =>
+            GenerateCommand.GenerateAsync(Options(existingPath)));
+
+        Assert.Contains("lists servers", failure.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DiffComparesServersByIdAndPrefixesEachLine()
+    {
+        var changes = DiffCommand.CompareServers(TwoServers("aa"), TwoServers("bb", withBeta: false));
+
+        Assert.Contains("[alpha] ~ mods/a.jar: hash aa -> bb", changes);
+        Assert.Contains("[beta] - server", changes);
+        Assert.Contains("[beta] + server", DiffCommand.CompareServers(TwoServers("aa", withBeta: false), TwoServers("aa")));
+        Assert.Empty(DiffCommand.CompareServers(TwoServers("aa"), TwoServers("aa")));
+    }
+
+    [Fact]
+    public void DiffReportsAManifestWideShaderPackChangeOnceForTwoServers()
+    {
+        var before = TwoServers("aa");
+        var after = TwoServers("aa");
+        before.DefaultShaderPackId = "pack-a";
+        after.DefaultShaderPackId = "pack-b";
+
+        var changes = DiffCommand.CompareServers(before, after);
+
+        Assert.Single(changes);
+        Assert.Equal("~ defaultShaderPackId: pack-a -> pack-b", changes[0]);
+    }
+
     [Fact]
     public async Task DiffOnIdenticalManifestsReportsNothing()
     {

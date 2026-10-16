@@ -26,6 +26,43 @@ public sealed class ContentPackManagerTests : IDisposable
     }
 
     [Fact]
+    public async Task DropIn_ToggleRenamesJarAndReportsEnabledState()
+    {
+        var mods = Path.Combine(_directory, "mods");
+        Directory.CreateDirectory(mods);
+        await File.WriteAllTextAsync(Path.Combine(mods, "user.jar"), "user");
+        var manager = new DropInModManager(mods);
+
+        var disabled = await manager.SetEnabledAsync("user.jar", false);
+
+        Assert.Equal("user.jar.disabled", disabled.FileName);
+        Assert.False(File.Exists(Path.Combine(mods, "user.jar")));
+        Assert.False(Assert.Single(await manager.ScanAsync()).IsEnabled);
+
+        var enabled = await manager.SetEnabledAsync("user.jar.disabled", true);
+
+        Assert.Equal("user.jar", enabled.FileName);
+        Assert.True(File.Exists(Path.Combine(mods, "user.jar")));
+        var relisted = Assert.Single(await manager.ScanAsync());
+        Assert.Equal("user.jar", relisted.FileName);
+        Assert.True(relisted.IsEnabled);
+    }
+
+    [Fact]
+    public async Task DropIn_ServerManagedJarCannotBeDisabled()
+    {
+        var mods = Path.Combine(_directory, "mods-managed");
+        Directory.CreateDirectory(mods);
+        await File.WriteAllTextAsync(Path.Combine(mods, "server.jar"), "server");
+        var manager = new DropInModManager(mods, ["server.jar"]);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => manager.SetEnabledAsync("server.jar", false));
+
+        Assert.True(File.Exists(Path.Combine(mods, "server.jar")));
+        Assert.False(File.Exists(Path.Combine(mods, "server.jar.disabled")));
+    }
+
+    [Fact]
     public async Task ResourcePacks_EnforceRequiredBoundaryAndSerializeOrder()
     {
         var packs = Path.Combine(_directory, "resourcepacks");

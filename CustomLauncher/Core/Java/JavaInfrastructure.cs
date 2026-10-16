@@ -6,6 +6,9 @@ public interface IJavaDiscovery
 {
     string? ScanSystemForValidJava();
 
+    /// <summary>Every existing Java executable found on the system, in priority order.</summary>
+    IEnumerable<string> EnumerateCandidates();
+
     string ExecutableFileName { get; }
 }
 
@@ -116,7 +119,7 @@ public sealed class JavaProcessRunner : IJavaProcessRunner
 
 internal static class JavaDiscoveryUtilities
 {
-    public static string? FirstExistingExecutable(
+    public static IEnumerable<string> ExistingExecutables(
         IJavaFileSystem fileSystem,
         IEnumerable<string?> javaHomesOrExecutables,
         string executableFileName)
@@ -138,11 +141,9 @@ internal static class JavaDiscoveryUtilities
                 : Path.Combine(trimmed, "bin", executableFileName);
             if (seen.Add(candidate) && fileSystem.FileExists(candidate))
             {
-                return candidate;
+                yield return candidate;
             }
         }
-
-        return null;
     }
 
     public static IEnumerable<string> PathCandidates(IJavaFileSystem fileSystem, string executableFileName)

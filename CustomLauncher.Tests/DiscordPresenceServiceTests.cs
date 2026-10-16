@@ -33,10 +33,26 @@ public sealed class DiscordPresenceServiceTests
 
         Assert.All(client.Presences, presence =>
         {
-            Assert.Equal("CustomLauncher", presence.Details);
+            Assert.Equal(LauncherConfig.ServerName, presence.Details);
             Assert.DoesNotContain("uuid", presence.State, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("user", presence.State, StringComparison.OrdinalIgnoreCase);
         });
+    }
+
+    [Fact]
+    public void SetServer_ReappliesTheCurrentStateWithTheNewDetailsAndImage()
+    {
+        var client = new FakeClient();
+        using var service = new DiscordPresenceService("client", true, true, () => client);
+        service.Init();
+        service.SetState(DiscordPresenceState.Ready);
+
+        service.SetServer("Second server", "second-logo");
+
+        var last = client.Presences[^1];
+        Assert.Equal("Second server", last.Details);
+        Assert.Equal("Ready to play", last.State);
+        Assert.Equal("second-logo", last.LargeImageKey);
     }
 
     [Fact]

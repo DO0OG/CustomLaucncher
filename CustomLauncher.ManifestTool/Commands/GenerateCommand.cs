@@ -68,7 +68,37 @@ public static class GenerateCommand
             throw new DirectoryNotFoundException($"Input directory does not exist: {sourceDirectory}");
 
         var existing = await LoadExistingAsync(options.ExistingPath, cancellationToken);
-        var existingByPath = (existing?.Modules ?? [])
+        // Rewriting a multi-server manifest from one folder would drop every other server's modules.
+        if (existing?.Servers.Count > 0)
+            throw new InvalidDataException(
+                "This manifest lists servers; edit it in the window (run the tool without arguments) " +
+                "so the other servers' modules are kept.");
+
+        var modules = await ScanModulesAsync(options, existing?.Modules ?? [], cancellationToken);
+
+        return new ServerDistribution
+        {
+            ServerId = options.ServerId ?? existing?.ServerId ?? new DirectoryInfo(sourceDirectory).Name,
+            Modules = modules,
+            Java = existing?.Java ?? new JavaRequirement(),
+            DefaultShaderPackId = existing?.DefaultShaderPackId,
+        };
+    }
+
+    /// <summary>
+    /// Scans the source directory into modules. Hand-set metadata of <paramref name="previous"/>
+    /// modules is kept, matched by normalized relative path.
+    /// </summary>
+    public static async Task<List<DistroModule>> ScanModulesAsync(
+        GenerateOptions options,
+        IEnumerable<DistroModule> previous,
+        CancellationToken cancellationToken = default)
+    {
+        var sourceDirectory = Path.GetFullPath(options.SourceDirectory);
+        if (!Directory.Exists(sourceDirectory))
+            throw new DirectoryNotFoundException($"Input directory does not exist: {sourceDirectory}");
+
+        var existingByPath = previous
             .GroupBy(module => NormalizeManifestPath(module.Path), StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
 
@@ -95,29 +125,23 @@ public static class GenerateCommand
             cancellationToken.ThrowIfCancellationRequested();
 
             var manifestPath = NormalizeManifestPath(Path.GetRelativePath(sourceDirectory, filePath));
-            existingByPath.TryGetValue(manifestPath, out var previous);
+            existingByPath.TryGetValue(manifestPath, out var previousModule);
 
             modules.Add(new DistroModule
             {
-                Id = previous?.Id ?? CreateModuleId(manifestPath),
+                Id = previousModule?.Id ?? CreateModuleId(manifestPath),
                 Path = manifestPath,
-                Url = BuildUrl(options, manifestPath) ?? previous?.Url ?? string.Empty,
+                Url = BuildUrl(options, manifestPath) ?? previousModule?.Url ?? string.Empty,
                 Hash = await ComputeSha256Async(filePath, cancellationToken),
-                Type = options.Type ?? previous?.Type ?? ModuleType.RequiredMod,
-                Packaging = options.Packaging ?? previous?.Packaging ?? ModulePackaging.File,
-                ParentId = options.ParentWasSpecified ? options.ParentId : previous?.ParentId,
-                LoadOrder = options.LoadOrderWasSpecified ? options.LoadOrder : previous?.LoadOrder,
-                IsServerManaged = options.Managed ?? previous?.IsServerManaged ?? true,
+                Type = options.Type ?? previousModule?.Type ?? ModuleType.RequiredMod,
+                Packaging = options.Packaging ?? previousModule?.Packaging ?? ModulePackaging.File,
+                ParentId = options.ParentWasSpecified ? options.ParentId : previousModule?.ParentId,
+                LoadOrder = options.LoadOrderWasSpecified ? options.LoadOrder : previousModule?.LoadOrder,
+                IsServerManaged = options.Managed ?? previousModule?.IsServerManaged ?? true,
             });
         }
 
-        return new ServerDistribution
-        {
-            ServerId = options.ServerId ?? existing?.ServerId ?? new DirectoryInfo(sourceDirectory).Name,
-            Modules = modules,
-            Java = existing?.Java ?? new JavaRequirement(),
-            DefaultShaderPackId = existing?.DefaultShaderPackId,
-        };
+        return modules;
     }
 
     public static async Task<string> ComputeSha256Async(

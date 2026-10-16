@@ -22,30 +22,35 @@ public sealed class GameSessionPreparer(
     IModLoaderInstaller modLoader,
     IGameRuntime runtime,
     IJavaProvisioner? javaProvisioner = null,
-    Func<IReadOnlyCollection<string>>? disabledOptionalModules = null,
+    Func<string, IReadOnlyCollection<string>>? disabledOptionalModules = null,
     IServerListWriter? serverList = null,
-    string? gameDirectory = null)
+    string? gameDirectory = null,
+    Func<string?>? selectedServerId = null)
 {
     public async Task<PreparedGameSession> PrepareAsync(
         MLaunchOption launchOption,
         IProgress<LaunchProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
+        ServerDistribution manifest;
+        ServerEntry server;
         ServerDistribution distribution;
         string? warning = null;
         try
         {
             progress?.Report(new LaunchProgress("매니페스트 조회", 0));
-            distribution = await content.FetchAsync(cancellationToken);
+            manifest = await content.FetchAsync(cancellationToken);
+            server = ServerCatalog.Select(manifest, selectedServerId?.Invoke());
             // Honour the user's optional-module choices before touching the game directory.
-            distribution = ModuleSelection.Filter(distribution, disabledOptionalModules?.Invoke());
+            distribution = ModuleSelection.Filter(
+                ServerCatalog.ForServer(manifest, server), disabledOptionalModules?.Invoke(server.Id));
             progress?.Report(new LaunchProgress("콘텐츠 동기화", 0));
             var update = await content.UpdateAsync(distribution, cancellationToken);
             switch (update.Status)
             {
                 case ModuleUpdateStatus.Updated:
                 case ModuleUpdateStatus.UpToDate:
-                    await content.SaveCacheAsync(distribution, cancellationToken);
+                    await content.SaveCacheAsync(manifest, cancellationToken);
                     break;
                 case ModuleUpdateStatus.Cancelled:
                     throw new OperationCanceledException(cancellationToken);
@@ -58,10 +63,13 @@ public sealed class GameSessionPreparer(
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
         catch (Exception exception) when (exception is HttpRequestException or IOException or TaskCanceledException)
         {
-            distribution = await content.TryLoadCacheAsync(cancellationToken)
+            manifest = await content.TryLoadCacheAsync(cancellationToken)
                 ?? throw new InvalidOperationException("최초 콘텐츠 동기화가 필요하지만 매니페스트에 연결할 수 없습니다.", exception);
-            if (!content.HasManagedState)
+            server = ServerCatalog.Select(manifest, selectedServerId?.Invoke());
+            if (!content.HasManagedState(server.Id))
                 throw new InvalidOperationException("검증된 로컬 콘텐츠 상태가 없어 오프라인으로 실행할 수 없습니다.", exception);
+            distribution = ModuleSelection.Filter(
+                ServerCatalog.ForServer(manifest, server), disabledOptionalModules?.Invoke(server.Id));
             warning = "네트워크에 연결할 수 없어 마지막으로 검증된 콘텐츠로 실행합니다.";
             progress?.Report(new LaunchProgress("오프라인 콘텐츠 사용", 1, warning));
         }
@@ -73,10 +81,19 @@ public sealed class GameSessionPreparer(
 
         // Best effort: the player can always add the server by hand, so a failure here is not
         // allowed to stop the launch.
-        if (serverList is not null && gameDirectory is not null)
-            serverList.Register(gameDirectory, LauncherConfig.ServerName, LauncherConfig.ServerAddress);
+        if (gameDirectory is not null)
+        {
+            // The game process starts inside this folder, so it has to exist even before any module lands.
+            var serverDirectory = LauncherServers.GameDirectoryFor(gameDirectory, server.Id);
+            Directory.CreateDirectory(serverDirectory);
+            serverList?.Register(serverDirectory, server.Name, ServerCatalog.JoinAddress(server));
+            launchOption.Path = LauncherServers.MinecraftPathFor(gameDirectory, server.Id);
+        }
 
-        var targetVersion = await modLoader.EnsureInstalledAsync(progress, cancellationToken);
+        launchOption.ServerIp = server.Address;
+        launchOption.ServerPort = server.Port;
+        var targetVersion = await modLoader.EnsureInstalledAsync(
+            ModLoaderConfiguration.FromServer(server), progress, cancellationToken);
         progress?.Report(new LaunchProgress("게임 파일 설치", 0));
         await runtime.InstallAsync(targetVersion, progress, cancellationToken);
         progress?.Report(new LaunchProgress("프로세스 생성", 0.95));

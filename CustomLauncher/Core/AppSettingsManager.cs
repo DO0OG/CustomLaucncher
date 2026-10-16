@@ -1,5 +1,6 @@
 using System.Text.Json;
 using CustomLauncher.Models;
+using CustomLauncher.Shared.Models;
 
 namespace CustomLauncher.Core;
 
@@ -80,6 +81,11 @@ public sealed class AppSettingsManager
         settings.Java.MinRamMb = Math.Max(512, settings.Java.MinRamMb);
         settings.Java.MaxRamMb = Math.Max(settings.Java.MinRamMb, settings.Java.MaxRamMb);
         settings.EnabledResourcePacks ??= [];
+        settings.DisabledOptionalModuleIdsByServer ??= new(StringComparer.Ordinal);
+        if (settings.DisabledOptionalModuleIds is { Count: > 0 } legacyDisabled &&
+            !settings.DisabledOptionalModuleIdsByServer.ContainsKey(ServerCatalog.LegacyServerId))
+            settings.DisabledOptionalModuleIdsByServer[ServerCatalog.LegacyServerId] = legacyDisabled;
+        settings.DisabledOptionalModuleIds = null;
         return settings;
     }
 }

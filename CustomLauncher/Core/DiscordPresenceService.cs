@@ -8,7 +8,7 @@ public enum DiscordPresenceState
     Playing,
 }
 
-public sealed record DiscordPresence(string Details, string State);
+public sealed record DiscordPresence(string Details, string State, string? LargeImageKey = null);
 
 public interface IDiscordRpcClientAdapter : IDisposable
 {
@@ -27,6 +27,8 @@ public interface IDiscordPresenceService : IDisposable
 
     void SetState(DiscordPresenceState state);
 
+    void SetServer(string details, string? largeImageKey);
+
     void SetEnabled(bool enabled);
 
     void Shutdown();
@@ -41,6 +43,9 @@ public sealed class DiscordPresenceService : IDiscordPresenceService
     private readonly object sync = new();
     private IDiscordRpcClientAdapter? client;
     private bool userEnabled;
+    private string details = LauncherConfig.ServerName;
+    private string? largeImageKey;
+    private DiscordPresenceState? currentState;
 
     public DiscordPresenceService(
         string clientId,
@@ -100,6 +105,19 @@ public sealed class DiscordPresenceService : IDiscordPresenceService
         }
     }
 
+    public void SetServer(string details, string? largeImageKey)
+    {
+        lock (sync)
+        {
+            this.details = details;
+            this.largeImageKey = largeImageKey;
+            if (IsEnabled && client is not null && currentState is { } state)
+            {
+                SetStateCore(state);
+            }
+        }
+    }
+
     public void SetEnabled(bool enabled)
     {
         lock (sync)
@@ -127,6 +145,7 @@ public sealed class DiscordPresenceService : IDiscordPresenceService
 
     private void SetStateCore(DiscordPresenceState state)
     {
+        currentState = state;
         if (client is null)
         {
             return;
@@ -171,12 +190,12 @@ public sealed class DiscordPresenceService : IDiscordPresenceService
         }
     }
 
-    private static DiscordPresence Map(DiscordPresenceState state) => state switch
+    private DiscordPresence Map(DiscordPresenceState state) => state switch
     {
-        DiscordPresenceState.LauncherOpen => new("CustomLauncher", "Launcher open"),
-        DiscordPresenceState.Ready => new("CustomLauncher", "Ready to play"),
-        DiscordPresenceState.LaunchingGame => new("CustomLauncher", "Launching game"),
-        DiscordPresenceState.Playing => new("CustomLauncher", "Playing"),
+        DiscordPresenceState.LauncherOpen => new(details, "Launcher open", largeImageKey),
+        DiscordPresenceState.Ready => new(details, "Ready to play", largeImageKey),
+        DiscordPresenceState.LaunchingGame => new(details, "Launching game", largeImageKey),
+        DiscordPresenceState.Playing => new(details, "Playing", largeImageKey),
         _ => throw new ArgumentOutOfRangeException(nameof(state), state, null),
     };
 }

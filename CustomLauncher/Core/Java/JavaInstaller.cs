@@ -243,7 +243,7 @@ public sealed class JavaInstaller
             $"https://api.adoptium.net/v3/assets/latest/{featureVersion}/hotspot" +
             $"?architecture={Uri.EscapeDataString(architecture)}&image_type=jdk&os={Uri.EscapeDataString(platform)}&vendor=eclipse");
         using var request = new HttpRequestMessage(HttpMethod.Get, uri);
-        request.Headers.UserAgent.ParseAdd("CustomLauncher/2.0");
+        request.Headers.UserAgent.ParseAdd(LauncherConfig.UserAgent);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(15));
         using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token)
@@ -289,7 +289,7 @@ public sealed class JavaInstaller
         }
 
         using var request = new HttpRequestMessage(HttpMethod.Get, uri);
-        request.Headers.UserAgent.ParseAdd("CustomLauncher/2.0");
+        request.Headers.UserAgent.ParseAdd(LauncherConfig.UserAgent);
         using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
             .ConfigureAwait(false);
         response.EnsureSuccessStatusCode();

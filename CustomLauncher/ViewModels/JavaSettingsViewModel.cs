@@ -1,6 +1,7 @@
 using CustomLauncher.Core;
 using CustomLauncher.Core.Java;
 using CustomLauncher.Models;
+using CustomLauncher.Shared.Models;
 
 namespace CustomLauncher.ViewModels;
 
@@ -14,6 +15,7 @@ public sealed class JavaSettingsViewModel : ContentTabViewModel
     private readonly Func<IJavaDiscovery> _discoveryFactory;
     private readonly JavaValidator _validator;
     private readonly Func<int, IProgress<JavaInstallProgress>?, CancellationToken, Task<JavaInstallResult>>? _install;
+    private readonly Func<CancellationToken, Task<JavaRequirement?>>? _requirementSource;
     private readonly RamRecommendation _ram;
     private string? _executablePath;
     private int _minRamMb;
@@ -28,12 +30,14 @@ public sealed class JavaSettingsViewModel : ContentTabViewModel
         ISystemMemoryProvider? memory = null,
         Func<IJavaDiscovery>? discoveryFactory = null,
         JavaValidator? validator = null,
-        Func<int, IProgress<JavaInstallProgress>?, CancellationToken, Task<JavaInstallResult>>? install = null)
+        Func<int, IProgress<JavaInstallProgress>?, CancellationToken, Task<JavaInstallResult>>? install = null,
+        Func<CancellationToken, Task<JavaRequirement?>>? requirementSource = null)
     {
         _config = config;
         _discoveryFactory = discoveryFactory ?? (() => JavaDiscoveryFactory.Create());
         _validator = validator ?? new JavaValidator();
         _install = install;
+        _requirementSource = requirementSource;
         _ram = RamCalculator.Calculate((memory ?? new RuntimeSystemMemoryProvider()).GetTotalMemoryBytes());
         _executablePath = config.ExecutablePath;
         _minRamMb = config.MinRamMb;
@@ -185,8 +189,11 @@ public sealed class JavaSettingsViewModel : ContentTabViewModel
             return;
         }
 
-        var feature = JavaProvisioningService.ParseFeatureVersion((string?)null);
-        Message = $"Java {feature} 설치를 시작합니다...";
+        var requirement = _requirementSource is null ? null : await _requirementSource(token);
+        var feature = JavaProvisioningService.ParseFeatureVersion(requirement?.RecommendedVersion, requirement?.MinVersion);
+        Message = requirement is null
+            ? $"서버 요구 버전을 확인하지 못해 기본값 Java {feature}을(를) 설치합니다..."
+            : $"Java {feature} 설치를 시작합니다...";
         var progress = new Progress<JavaInstallProgress>(value =>
         {
             Progress = value.TotalBytes is > 0 ? value.BytesReceived * 100.0 / value.TotalBytes.Value : 0;

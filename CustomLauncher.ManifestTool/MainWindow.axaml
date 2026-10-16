@@ -1,13 +1,57 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="CustomLauncher.ManifestTool.MainWindow"
-        Width="760" Height="660" MinWidth="640" MinHeight="560"
+        Width="760" Height="820" MinWidth="640" MinHeight="600"
         Background="{StaticResource WindowBrush}"
         WindowStartupLocation="CenterScreen"
         Title="배포 매니페스트 생성기">
   <Grid RowDefinitions="*,Auto" Margin="20">
     <ScrollViewer Grid.Row="0">
       <StackPanel Spacing="16">
+
+        <StackPanel Spacing="6">
+          <TextBlock Classes="label" Text="서버" />
+          <TextBlock Classes="hint" Text="매니페스트에 올릴 서버 목록입니다. 서버마다 모듈이 따로 관리되고, 아래 생성은 선택한 서버에만 적용됩니다." />
+          <Grid ColumnDefinitions="*,Auto">
+            <ListBox ItemsSource="{Binding Servers}" SelectedItem="{Binding SelectedServer}" Height="110">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding Display}" />
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <StackPanel Grid.Column="1" Spacing="8" Margin="8,0,0,0">
+              <Button Content="서버 추가" Click="AddServerClicked" />
+              <Button Content="서버 삭제" Click="RemoveServerClicked" IsEnabled="{Binding CanDeleteServer}" />
+            </StackPanel>
+          </Grid>
+          <Grid DataContext="{Binding SelectedServer}" ColumnDefinitions="Auto,*,Auto,*"
+                RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="8" Margin="0,8,0,0">
+            <TextBlock Grid.Row="0" Grid.Column="0" Classes="hint" VerticalAlignment="Center" Text="ID" />
+            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Id}" Watermark="예: dogs" />
+            <TextBlock Grid.Row="0" Grid.Column="2" Classes="hint" VerticalAlignment="Center" Text="이름" />
+            <TextBox Grid.Row="0" Grid.Column="3" Text="{Binding Name}" />
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Classes="hint" VerticalAlignment="Center" Text="주소" />
+            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Address}" Watermark="예: play.example.com" />
+            <TextBlock Grid.Row="1" Grid.Column="2" Classes="hint" VerticalAlignment="Center" Text="포트" />
+            <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding Port}" />
+
+            <TextBlock Grid.Row="2" Grid.Column="0" Classes="hint" VerticalAlignment="Center" Text="Minecraft 버전" />
+            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding MinecraftVersion}" Watermark="예: 1.20.1" />
+            <TextBlock Grid.Row="2" Grid.Column="2" Classes="hint" VerticalAlignment="Center" Text="로더 종류" />
+            <ComboBox Grid.Row="2" Grid.Column="3" HorizontalAlignment="Stretch"
+                      ItemsSource="{Binding LoaderTypes}" SelectedItem="{Binding LoaderType}" />
+
+            <TextBlock Grid.Row="3" Grid.Column="0" Classes="hint" VerticalAlignment="Center" Text="로더 버전" />
+            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding LoaderVersion}" />
+            <TextBlock Grid.Row="3" Grid.Column="2" Classes="hint" VerticalAlignment="Center" Text="Java 권장" />
+            <TextBox Grid.Row="3" Grid.Column="3" Text="{Binding JavaRecommendedVersion}" Watermark="예: 17" />
+
+            <TextBlock Grid.Row="4" Grid.Column="0" Classes="hint" VerticalAlignment="Center" Text="Java 최소" />
+            <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding JavaMinVersion}" Watermark="예: 17" />
+          </Grid>
+        </StackPanel>
 
         <StackPanel Spacing="6">
           <TextBlock Classes="label" Text="배포 폴더" />
@@ -30,14 +74,8 @@
         </StackPanel>
 
         <StackPanel Spacing="6">
-          <TextBlock Classes="label" Text="서버 ID" />
-          <TextBlock Classes="hint" Text="비워두면 폴더 이름을 사용합니다." />
-          <TextBox Text="{Binding ServerId}" Watermark="예: dogs" />
-        </StackPanel>
-
-        <StackPanel Spacing="6">
           <TextBlock Classes="label" Text="저장 위치" />
-          <TextBlock Classes="hint" Text="생성된 distribution.json 을 저장할 경로입니다." />
+          <TextBlock Classes="hint" Text="distribution.json 을 저장하고 불러오는 경로입니다." />
           <TextBox Text="{Binding OutputPath}" Watermark="예: D:\pack\distribution.json" />
         </StackPanel>
 
@@ -58,8 +96,12 @@
     <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,16,0,0">
       <TextBlock Grid.Column="0" Classes="hint" VerticalAlignment="Center"
                  Text="입력한 값은 자동으로 저장되어 다음 실행 때 그대로 남습니다." />
-      <Button Grid.Column="1" Classes="accent" Content="매니페스트 생성"
-              Click="GenerateClicked" IsEnabled="{Binding CanGenerate}" />
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+        <Button Content="불러오기" Click="LoadClicked" IsEnabled="{Binding CanGenerate}" />
+        <Button Content="저장" Click="SaveClicked" IsEnabled="{Binding CanGenerate}" />
+        <Button Classes="accent" Content="선택한 서버의 모듈 생성"
+                Click="GenerateClicked" IsEnabled="{Binding CanGenerate}" />
+      </StackPanel>
     </Grid>
   </Grid>
 </Window>

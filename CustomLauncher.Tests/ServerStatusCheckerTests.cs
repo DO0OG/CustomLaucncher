@@ -51,7 +51,7 @@ public sealed class ServerStatusCheckerTests
     {
         var handler = new Handler(request =>
         {
-            Assert.Equal("CustomLauncher/2.0", request.Headers.UserAgent.ToString());
+            Assert.Equal(LauncherConfig.UserAgent, request.Headers.UserAgent.ToString());
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("not-json") };
         });
         var checker = new ServerStatusChecker(new HttpClient(handler), "https://example.invalid/status");

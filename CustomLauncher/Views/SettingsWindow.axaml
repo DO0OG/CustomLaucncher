@@ -26,6 +26,12 @@
                 <TextBlock Text="×" VerticalAlignment="Center" Classes="muted" />
                 <NumericUpDown Width="150" Value="{Binding ResolutionHeight}" Minimum="480" Maximum="4320" Increment="10" />
               </StackPanel>
+              <CheckBox IsChecked="{Binding FullScreen}" Content="전체화면으로 실행" />
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+              <TextBlock Text="실행" Classes="h2" />
+              <CheckBox IsChecked="{Binding CloseLauncherOnGameStart}" Content="게임 실행 후 런처 닫기" />
             </StackPanel>
 
             <StackPanel Spacing="8">

@@ -2,12 +2,13 @@ using CmlLib.Core;
 using CmlLib.Core.Installer.Forge;
 using CmlLib.Core.ModLoaders.FabricMC;
 using CmlLib.Core.VersionMetadata;
+using CustomLauncher.Shared.Models;
 
 namespace CustomLauncher.Core;
 
 public interface IModLoaderInstaller
 {
-    Task<string> EnsureInstalledAsync(IProgress<LaunchProgress>? progress, CancellationToken cancellationToken);
+    Task<string> EnsureInstalledAsync(ModLoaderConfiguration configuration, IProgress<LaunchProgress>? progress, CancellationToken cancellationToken);
 }
 
 public interface IModLoaderBackend
@@ -26,55 +27,47 @@ public sealed record ModLoaderConfiguration(
     string ForgeVersion,
     string FabricVersion)
 {
-    public static ModLoaderConfiguration FromLauncherConfig() => new(
-        LauncherConfig.ModLoaderType,
-        LauncherConfig.McVersion,
-        LauncherConfig.ForgeVersion,
-        LauncherConfig.FabricVersion);
+    public static ModLoaderConfiguration FromServer(ServerEntry server) => new(
+        server.ModLoader.Type,
+        server.MinecraftVersion,
+        server.ModLoader.Version,
+        server.ModLoader.Version);
 }
 
-public sealed class ModLoaderInstaller : IModLoaderInstaller
+public sealed class ModLoaderInstaller(IModLoaderBackend backend) : IModLoaderInstaller
 {
-    private readonly IModLoaderBackend _backend;
-    private readonly ModLoaderConfiguration _configuration;
-
-    public ModLoaderInstaller(IModLoaderBackend backend, ModLoaderConfiguration? configuration = null)
+    public async Task<string> EnsureInstalledAsync(
+        ModLoaderConfiguration configuration, IProgress<LaunchProgress>? progress, CancellationToken cancellationToken)
     {
-        _backend = backend;
-        _configuration = configuration ?? ModLoaderConfiguration.FromLauncherConfig();
-    }
-
-    public async Task<string> EnsureInstalledAsync(IProgress<LaunchProgress>? progress, CancellationToken cancellationToken)
-    {
-        var type = _configuration.Type.Trim().ToLowerInvariant();
-        if (type == "none") return _configuration.MinecraftVersion;
+        var type = configuration.Type.Trim().ToLowerInvariant();
+        if (type is "none" or "vanilla") return configuration.MinecraftVersion;
 
         progress?.Report(new LaunchProgress("모드 로더 확인", 0));
-        var installed = await _backend.GetInstalledVersionNamesAsync(cancellationToken);
+        var installed = await backend.GetInstalledVersionNamesAsync(cancellationToken);
         switch (type)
         {
             case "forge":
                 {
                     var existing = installed.FirstOrDefault(name =>
                         name.Contains("forge", StringComparison.OrdinalIgnoreCase) &&
-                        name.Contains(_configuration.MinecraftVersion, StringComparison.OrdinalIgnoreCase) &&
-                        name.Contains(_configuration.ForgeVersion, StringComparison.OrdinalIgnoreCase));
+                        name.Contains(configuration.MinecraftVersion, StringComparison.OrdinalIgnoreCase) &&
+                        name.Contains(configuration.ForgeVersion, StringComparison.OrdinalIgnoreCase));
                     if (existing is not null) return existing;
                     progress?.Report(new LaunchProgress("Forge 설치", 0));
-                    return await _backend.InstallForgeAsync(
-                        _configuration.MinecraftVersion, _configuration.ForgeVersion, progress, cancellationToken);
+                    return await backend.InstallForgeAsync(
+                        configuration.MinecraftVersion, configuration.ForgeVersion, progress, cancellationToken);
                 }
             case "fabric":
                 {
-                    var expected = _backend.GetFabricVersionName(
-                        _configuration.MinecraftVersion, _configuration.FabricVersion);
+                    var expected = backend.GetFabricVersionName(
+                        configuration.MinecraftVersion, configuration.FabricVersion);
                     if (installed.Contains(expected, StringComparer.OrdinalIgnoreCase)) return expected;
                     progress?.Report(new LaunchProgress("Fabric 설치", 0));
-                    return await _backend.InstallFabricAsync(
-                        _configuration.MinecraftVersion, _configuration.FabricVersion, progress, cancellationToken);
+                    return await backend.InstallFabricAsync(
+                        configuration.MinecraftVersion, configuration.FabricVersion, progress, cancellationToken);
                 }
             default:
-                throw new InvalidOperationException($"지원하지 않는 모드 로더입니다: {_configuration.Type}");
+                throw new InvalidOperationException($"지원하지 않는 모드 로더입니다: {configuration.Type}");
         }
     }
 }

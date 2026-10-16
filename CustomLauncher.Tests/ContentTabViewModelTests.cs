@@ -161,7 +161,7 @@ public sealed class ContentTabViewModelTests : IDisposable
         var viewModel = new ModuleManagementViewModel(
             new ThrowingContentService(),
             new DropInModManager(Dir("mods")),
-            new ModuleManagementViewModel.ModuleSelectionStore(() => [], _ => Task.CompletedTask));
+            new ModuleManagementViewModel.ModuleSelectionStore(_ => [], _ => Task.CompletedTask, () => null));
 
         var exception = await Record.ExceptionAsync(viewModel.RefreshAsync);
 
@@ -174,7 +174,7 @@ public sealed class ContentTabViewModelTests : IDisposable
     {
         var content = new StubContentService(new ModuleUpdateResult(ModuleUpdateStatus.Failed, [], "해시 불일치"));
         var viewModel = new ModuleManagementViewModel(content, new DropInModManager(Dir("mods")),
-            new ModuleManagementViewModel.ModuleSelectionStore(() => [], _ => Task.CompletedTask));
+            new ModuleManagementViewModel.ModuleSelectionStore(_ => [], _ => Task.CompletedTask, () => null));
 
         await viewModel.RefreshAsync();
         await viewModel.UpdateAsync();
@@ -189,7 +189,7 @@ public sealed class ContentTabViewModelTests : IDisposable
         var content = new StubContentService(new ModuleUpdateResult(ModuleUpdateStatus.UpToDate, []));
         var disabled = new List<string> { "optional" };
         var viewModel = new ModuleManagementViewModel(content, new DropInModManager(Dir("mods")),
-            new ModuleManagementViewModel.ModuleSelectionStore(() => disabled, _ => Task.CompletedTask));
+            new ModuleManagementViewModel.ModuleSelectionStore(_ => disabled, _ => Task.CompletedTask, () => null));
 
         await viewModel.RefreshAsync();
         await viewModel.UpdateAsync();
@@ -206,7 +206,7 @@ public sealed class ContentTabViewModelTests : IDisposable
         var disabled = new List<string>();
         var saves = 0;
         var viewModel = new ModuleManagementViewModel(content, new DropInModManager(Dir("mods")),
-            new ModuleManagementViewModel.ModuleSelectionStore(() => disabled, _ => { saves++; return Task.CompletedTask; }));
+            new ModuleManagementViewModel.ModuleSelectionStore(_ => disabled, _ => { saves++; return Task.CompletedTask; }, () => null));
 
         await viewModel.RefreshAsync();
         var optional = viewModel.Modules.Single(module => module.Id == "optional");
@@ -225,7 +225,7 @@ public sealed class ContentTabViewModelTests : IDisposable
 
     private sealed class ThrowingContentService : IContentUpdateService
     {
-        public bool HasManagedState => false;
+        public bool HasManagedState(string serverId) => false;
         public Task<ServerDistribution> FetchAsync(CancellationToken cancellationToken) =>
             throw new HttpRequestException("연결할 수 없습니다.");
         public Task<ModuleUpdateResult> UpdateAsync(ServerDistribution distribution, CancellationToken cancellationToken) =>
@@ -240,17 +240,26 @@ public sealed class ContentTabViewModelTests : IDisposable
     {
         public ServerDistribution? LastUpdated { get; private set; }
         public int CacheSaves { get; private set; }
-        public bool HasManagedState => true;
+        public bool HasManagedState(string serverId) => true;
 
         public Task<ServerDistribution> FetchAsync(CancellationToken cancellationToken) =>
             Task.FromResult(new ServerDistribution
             {
-                ServerId = "test",
-                Modules =
+                Servers =
                 [
-                    NewModule("core", ModuleType.RequiredMod, null),
-                    NewModule("optional", ModuleType.OptionalMod, null),
-                    NewModule("child", ModuleType.OptionalMod, "optional"),
+                    new ServerEntry
+                    {
+                        Id = "test",
+                        Name = "Test",
+                        Address = "play.example.com",
+                        MinecraftVersion = "1.20.1",
+                        Modules =
+                        [
+                            NewModule("core", ModuleType.RequiredMod, null),
+                            NewModule("optional", ModuleType.OptionalMod, null),
+                            NewModule("child", ModuleType.OptionalMod, "optional"),
+                        ],
+                    },
                 ],
             });
 

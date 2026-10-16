@@ -12,7 +12,7 @@
 | CmlLib.Core.Installer.Forge | 1.1.1 | Forge 설치 (MIT) |
 | XboxAuthNet.Game.Msal | 0.1.2 | MSAL 브라우저·디바이스 코드 provider 및 OS 보호 토큰 캐시 (MIT) |
 | SharpCompress | 0.50.5 | 7z 압축 해제. 모든 항목은 `ModuleValidation`으로 사전 검증 후 스트리밍됩니다. |
-| Velopack | 1.2.0 | 서명된 릴리스 업데이트 부트스트랩 (MIT) |
+| Velopack | 1.2.0 | 시작 훅만 사용(`VelopackApp.Build().Run()`). 업데이트 확인·적용 UI와 업데이트 피드는 아직 없음 (MIT) |
 | DiscordRichPresence | 1.6.1.70 | 선택적 Discord IPC. 컴파일 플래그와 사용자 opt-in 뒤에 있음 (MIT) |
 
 ## 매니페스트 도구

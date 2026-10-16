@@ -242,14 +242,17 @@ public sealed class AuthService : IAuthService
 
     // Every handler shares one account manager: each keeps its own in-memory copy of the account
     // file and writes all of it back, so separate copies would overwrite each other's accounts.
-    private JELoginHandler BuildHandler(IAuthenticationProvider provider) =>
-        new JELoginHandlerBuilder()
-            .WithAccountManager(_accountManager ??= new JsonXboxGameAccountManager(
-                Path.Combine(_paths.ConfigDir, "minecraft-accounts.json"),
-                JEGameAccount.FromSessionStorage,
-                JsonXboxGameAccountManager.DefaultSerializerOption))
+    private JELoginHandler BuildHandler(IAuthenticationProvider provider)
+    {
+        _accountManager ??= new JsonXboxGameAccountManager(
+            Path.Combine(_paths.ConfigDir, "minecraft-accounts.json"),
+            JEGameAccount.FromSessionStorage,
+            JsonXboxGameAccountManager.DefaultSerializerOption);
+        return new JELoginHandlerBuilder()
+            .WithAccountManager(_accountManager)
             .WithOAuthProvider(provider)
             .Build();
+    }
 
     private async Task<IPublicClientApplication> CreateApplicationAsync()
     {

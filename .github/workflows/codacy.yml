@@ -38,10 +38,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Codacy Analysis CLI를 직접 실행합니다. 공식 action의 실행 스크립트는 컨테이너에
-      # 환경 변수를 넘기지 않아 UTF-8을 지정할 수 없고, 설정 없는 ESLint처럼 실패한 도구의
-      # 결과를 SARIF로 바꾸는 단계가 MalformedInputException으로 중단되므로, 실제 결과를 내는
-      # Sonar C# 도구만 UTF-8 설정과 함께 돌립니다.
+      # Codacy Analysis CLI를 직접 실행합니다. 공식 action의 실행 스크립트는 컨테이너에 환경 변수를
+      # 넘기지 않고, CLI의 SARIF 작성 단계가 결과에 따라 MalformedInputException으로 중단되는 결함이
+      # 있어, CLI는 JSON으로만 결과를 내고 SARIF 변환은 아래 스크립트가 맡습니다. 실제 결과를 내는
+      # Sonar C# 도구만 돌리며, 규칙은 저장소 루트 SonarLint.xml을 따릅니다.
       - name: Run Codacy Analysis CLI
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
@@ -55,10 +55,61 @@ jobs:
             --volume "$GITHUB_WORKSPACE":"$GITHUB_WORKSPACE" \
             --volume /tmp:/tmp \
             codacy/codacy-analysis-cli:4.0.0 -- \
-            analyze --verbose --directory "$GITHUB_WORKSPACE" --tool sonarscharp \
+            analyze --directory "$GITHUB_WORKSPACE" --tool sonarscharp \
             $([ -n "$CODACY_PROJECT_TOKEN" ] && echo "--project-token $CODACY_PROJECT_TOKEN") \
-            --format sarif --output "$GITHUB_WORKSPACE/results.sarif" \
-            --max-allowed-issues 2147483647 --gh-code-scanning-compat
+            --format json --output "$GITHUB_WORKSPACE/results.json" \
+            --max-allowed-issues 2147483647
+
+      - name: Convert results to SARIF
+        run: |
+          python3 - <<'PY'
+          import json, os
+          root = os.environ["GITHUB_WORKSPACE"]
+          data = json.load(open("results.json", encoding="utf-8"))
+
+          def unwrap(node):
+              # circe는 sealed trait를 {"Issue": {...}}처럼 한 겹 감싸 내보냅니다.
+              while isinstance(node, dict) and len(node) == 1 and isinstance(next(iter(node.values())), dict):
+                  node = next(iter(node.values()))
+              return node
+
+          def scalar(value, key):
+              return value.get(key) if isinstance(value, dict) else value
+
+          def line_of(location):
+              location = unwrap(location)
+              return int(location.get("line", 1)) if isinstance(location, dict) else 1
+
+          levels = {"Err": "error", "Warn": "warning", "Info": "note"}
+          rules, results = {}, []
+          for element in data:
+              issue = unwrap(element)
+              if not isinstance(issue, dict) or "patternId" not in issue:
+                  continue  # FileError, FileMetrics 등은 건너뜁니다.
+              rule_id = "SonarCSharp_" + str(scalar(issue["patternId"], "value"))
+              message = str(scalar(issue.get("message", ""), "text"))
+              rules.setdefault(rule_id, {"id": rule_id, "shortDescription": {"text": rule_id}})
+              results.append({
+                  "ruleId": rule_id,
+                  "level": levels.get(issue.get("level"), "warning"),
+                  "message": {"text": message},
+                  "locations": [{"physicalLocation": {
+                      "artifactLocation": {"uri": str(issue.get("filename", "")).replace("\\", "/"), "uriBaseId": "%SRCROOT%"},
+                      "region": {"startLine": max(1, line_of(issue.get("location", {})))},
+                  }}],
+              })
+          sarif = {
+              "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+              "version": "2.1.0",
+              "runs": [{
+                  "tool": {"driver": {"name": "Sonarscharp (reported by Codacy)", "rules": list(rules.values())}},
+                  "originalUriBaseIds": {"%SRCROOT%": {"uri": "file://" + root.rstrip("/") + "/"}},
+                  "results": results,
+              }],
+          }
+          json.dump(sarif, open("results.sarif", "w", encoding="utf-8"), ensure_ascii=False)
+          print("results:", len(results), "rules:", len(rules))
+          PY
 
       # Upload the SARIF file generated in the previous step
       - name: Upload SARIF results file

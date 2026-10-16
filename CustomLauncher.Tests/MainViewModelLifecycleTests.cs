@@ -301,7 +301,7 @@ public sealed class MainViewModelLifecycleTests
             CancellationToken cancellationToken = default)
         {
             if (Fail) return Task.FromException<PreparedGameSession>(new InvalidOperationException("prepare failed"));
-            var process = new Process { StartInfo = new ProcessStartInfo("dotnet", "--version") };
+            var process = new Process { StartInfo = new ProcessStartInfo { FileName = "dotnet", ArgumentList = { "--version" } } };
             return Task.FromResult(new PreparedGameSession(process, new ServerDistribution(), "test"));
         }
 

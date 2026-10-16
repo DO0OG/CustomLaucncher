@@ -5,7 +5,7 @@ Korean version: [QA_MATRIX.ko.md](QA_MATRIX.ko.md)
 ## Automated evidence
 
 CI runs restore, build, unit tests, and `dotnet format --verify-no-changes` on Windows, macOS, and
-Linux for every pull request. The suite is 151 tests covering:
+Linux for every pull request. The suite is 282 tests covering:
 
 - Path mapping/migration and per-launcher directory scoping.
 - Settings transactions (validate-before-mutate, atomic write, schema version).
@@ -25,8 +25,6 @@ Linux for every pull request. The suite is 151 tests covering:
   submodules and persist, and a manifest fetch failure becomes a message not an unhandled fault.
 - Auth error mapping: the 403 that Minecraft returns is recognised whether the library fills
   `StatusCode` or only the message.
-- Sign-out: the session is cleared and the primary action swaps back to sign-in, and the session is
-  still dropped when clearing the cached credentials throws.
 - Sign-out: the session is cleared and the primary action swaps back to sign-in, and the session is
   still dropped when clearing the cached credentials throws.
 - Multiple accounts: the account picker appears only with two or more accounts, choosing one switches

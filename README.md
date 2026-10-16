@@ -18,6 +18,7 @@
 - 멀티플레이 목록(`servers.dat`)에 서버 자동 등록(플레이어가 넣은 항목 보존)
 - 하나의 매니페스트에 여러 서버를 담고 런처에서 골라 접속(형식은 [배포 매니페스트 스키마](docs/DISTRIBUTION_SCHEMA.ko.md) 참고)
 - 창으로 조작하는 배포 매니페스트 생성 도구
+- 전체화면 실행, 게임 시작 후 런처 닫기 설정(저장됨)
 - 색·배경·투명도를 한 파일(`Appearance.axaml`)에서 제어하는 외형 설정
 - Velopack 기반 자동 업데이트(GitHub Releases 피드, 설정에서 끌 수 있음)와 OS별 self-contained 패키징 워크플로
 
@@ -40,7 +41,7 @@ dotnet test    CustomLauncher/CustomLauncher.sln -c Release
 dotnet run --project CustomLauncher/CustomLauncher.csproj
 ```
 
-GitHub Actions가 Windows·macOS·Linux에서 빌드·테스트·포맷(151개 테스트)을 검증합니다.
+GitHub Actions가 Windows·macOS·Linux에서 빌드·테스트·포맷(282개 테스트)을 검증합니다.
 
 ## 매니페스트 도구
 

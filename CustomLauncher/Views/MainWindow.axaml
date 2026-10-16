@@ -96,7 +96,7 @@
     <!-- Collapsed by default; expands inside the window instead of opening a new one. -->
     <Expander Grid.Row="2" Header="게임 로그" IsExpanded="False" Margin="20,0,20,8">
       <StackPanel Spacing="8">
-        <TextBox Text="{Binding GameLog, Mode=OneWay}" IsReadOnly="True" Classes="mono"
+        <TextBox x:Name="GameLogBox" Text="{Binding GameLog, Mode=OneWay}" IsReadOnly="True" Classes="mono"
                  TextWrapping="Wrap" MaxHeight="180" AcceptsReturn="True"
                  ScrollViewer.VerticalScrollBarVisibility="Auto" />
         <Button Content="로그 폴더 열기" Command="{Binding OpenLogFolderCommand}"

@@ -5,7 +5,7 @@
 ## 자동 검증
 
 CI는 모든 PR에 대해 Windows·macOS·Linux에서 restore, build, 단위 테스트,
-`dotnet format --verify-no-changes`를 실행합니다. 테스트는 151개이며 다음을 커버합니다.
+`dotnet format --verify-no-changes`를 실행합니다. 테스트는 282개이며 다음을 커버합니다.
 
 - 경로 매핑/마이그레이션 및 런처별 디렉터리 분리.
 - 설정 트랜잭션(검증 후 변경, 원자적 쓰기, 스키마 버전).

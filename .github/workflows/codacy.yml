@@ -38,25 +38,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Execute Codacy Analysis CLI and generate a SARIF output with the security issues identified during the analysis
+      # Codacy Analysis CLI를 직접 실행합니다. 공식 action의 실행 스크립트는 컨테이너에
+      # JAVA_TOOL_OPTIONS를 넘기지 않아 SARIF 작성 단계가 한국어 줄에서 MalformedInputException으로
+      # 중단되므로, 같은 docker 호출에 UTF-8 설정만 더해 실행합니다.
       - name: Run Codacy Analysis CLI
-        uses: codacy/codacy-analysis-cli-action@d840f886c4bd4edc059706d09c6a1586111c540b
         env:
-          # SARIF 작성 단계가 러너 기본 문자 집합으로 소스를 읽어 한국어 줄에서 실패하므로 UTF-8로 고정
-          JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
-          LANG: C.UTF-8
-        with:
-          # Check https://github.com/codacy/codacy-analysis-cli#project-token to get your project token from your Codacy repository
-          # You can also omit the token and run the tools that support default configurations
-          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-          verbose: true
-          output: results.sarif
-          format: sarif
-          # Adjust severity of non-security issues
-          gh-code-scanning-compat: true
-          # Force 0 exit code to allow SARIF file generation
-          # This will handover control about PR rejection to the GitHub side
-          max-allowed-issues: 2147483647
+          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        run: |
+          docker run --rm \
+            --env CODACY_CODE="$GITHUB_WORKSPACE" \
+            --env CODACY_PROJECT_TOKEN="$CODACY_PROJECT_TOKEN" \
+            --env JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF-8" \
+            --env LANG=C.UTF-8 \
+            --volume /var/run/docker.sock:/var/run/docker.sock \
+            --volume "$GITHUB_WORKSPACE":"$GITHUB_WORKSPACE" \
+            --volume /tmp:/tmp \
+            codacy/codacy-analysis-cli:4.0.0 -- \
+            analyze --verbose --directory "$GITHUB_WORKSPACE" \
+            $([ -n "$CODACY_PROJECT_TOKEN" ] && echo "--project-token $CODACY_PROJECT_TOKEN") \
+            --format sarif --output "$GITHUB_WORKSPACE/results.sarif" \
+            --max-allowed-issues 2147483647 --gh-code-scanning-compat
 
       # Upload the SARIF file generated in the previous step
       - name: Upload SARIF results file
